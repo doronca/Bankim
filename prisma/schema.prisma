@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A user-defined, isolated financial "book" (e.g. a household, a business).
+// A fresh install starts with exactly one, seeded id "default" — in that
+// case the UI hides the switcher entirely rather than showing a single-option
+// dropdown. Users can add/rename/delete entities as their needs grow.
+model Entity {
+  id              String           @id @default(cuid())
+  name            String
+  icon            String? // optional emoji shown next to the name
+  order           Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  accountMappings AccountMapping[]
+  autoRules       AutoRule[]
+  insights        Insight[]
+}
+
+enum SourceSystem {
+  openfinance
+  ibkr
+  fair
+  manual
+}
+
+enum AccountType {
+  bank_account
+  credit_card
+  investment_portfolio
+}
+
+// One discovered account/card/portfolio from any source, mapped to an Entity.
+// Unmapped rows (entity = null) drive the onboarding prompt.
+model AccountMapping {
+  id             String       @id @default(cuid())
+  source         SourceSystem
+  externalId     String // account/card/portfolio id as reported by the source
+  displayName    String
+  nickname       String? // user-chosen label shown instead of displayName once set
+  accountNumber  String? // masked/full account or card number from the source, for disambiguation
+  providerId     String? // source's bank/broker id, e.g. "leumi", "max"
+  providerName   String? // human-readable provider name for display
+  accountType    AccountType
+  // Manual fallback for the card's monthly billing day, set by the user on
+  // the Forecast screen when the automatic heuristic (a matching lump-sum
+  // debit in a linked checking account) can't detect one — e.g. a card with
+  // no linked bank account synced yet, or too few charges so far to confirm
+  // a pattern. Takes priority over the detected day when present.
+  billingDayOverride Int?
+  currency       String       @default("ILS")
+  entityId       String?
+  entity         Entity?      @relation(fields: [entityId], references: [id], onDelete: SetNull)
+  // When a bank reports what's really one account as multiple rows (common
+  // with OpenFinance), this account can be merged into another: it keeps
+  // syncing under its own externalId, but is treated as part of the target
+  // account everywhere in the UI (display name, filtering).
+  mergedIntoId   String?
+  mergedInto     AccountMapping?  @relation("AccountMerge", fields: [mergedIntoId], references: [id], onDelete: SetNull)
+  mergedAccounts AccountMapping[] @relation("AccountMerge")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  transactions   Transaction[]
+  ibkrPositions  IbkrPosition[]
+  ibkrTrades     IbkrTrade[]
+  ibkrCashLines  IbkrCashLine[]
+  portfolioSnaps PortfolioSnapshot[]
+
+  @@unique([source, externalId])
+  @@index([entityId])
+  @@index([mergedIntoId])
+}
+
+model Transaction {
+  id               String         @id @default(cuid())
+  accountMapping   AccountMapping @relation(fields: [accountMappingId], references: [id])
+  accountMappingId String
+  date             DateTime
+  postedDate       DateTime?
+  amount           Float // negative = expense, positive = income, entity currency
+  currency         String         @default("ILS")
+  description      String // raw description from source
+  // Secondary free-text the source attaches to a transaction beyond its main
+  // description — e.g. OpenFinance's additionalInfo, which for a bank
+  // transfer is often the counterparty/beneficiary name. Shown as an
+  // optional expandable line under the transaction, never inline, since
+  // it's frequently empty and its meaning varies by transaction type.
+  additionalInfo   String?
+  merchantNormalized String?
+  category         String?
+  note             String? // free-text note the user attaches to this specific transaction
+  paymentMethod    String? // e.g. credit_card, standing_order, transfer, cash
+  isRecurringCandidate Boolean    @default(false)
+  isInvoiced       Boolean? // for card transactions: whether this charge has already been billed to the linked account (from OpenFinance); null = unknown/not applicable
+  sourceRef        String? // source's own transaction id, for idempotent re-sync
+  autoRuleId       String?
+  autoRule         AutoRule?      @relation(fields: [autoRuleId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  tasks            Task[]
+
+  @@unique([accountMappingId, sourceRef])
+  @@index([date])
+  @@index([category])
+}
+
+enum TaskStatus {
+  open
+  done
+}
+
+// A user-created to-do attached to a specific transaction (e.g. "follow up
+// on this refund", "dispute this charge") with an optional due date. Shown
+// inline on the transaction and rolled up into the dashboard's task list.
+model Task {
+  id            String       @id @default(cuid())
+  transaction   Transaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  title         String
+  dueDate       DateTime?
+  status        TaskStatus   @default(open)
+  // Hidden from the dashboard list until this date, without being done —
+  // "remind me about this later" rather than "this is resolved."
+  snoozedUntil  DateTime?
+  notes         TaskNote[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([transactionId])
+  @@index([status, dueDate])
+}
+
+model TaskNote {
+  id        String   @id @default(cuid())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+}
+
+// Manual override of the automatic recurring/one-off classification used on
+// the Subscriptions page — set when the cadence heuristic gets a merchant
+// wrong (e.g. a supermarket visited often but not actually a subscription,
+// or a subscription too new to have shown a regular cadence yet).
+model SubscriptionOverride {
+  merchant       String   @id // normalized merchant text, same key used to group transactions
+  isSubscription Boolean
+  updatedAt      DateTime @updatedAt
+}
+
+// A parent grouping for categories, e.g. "Home Maintenance" containing
+// "Groceries", "Electricity", "Water", "Property Tax".
+model CategoryGroup {
+  id         String     @id @default(cuid())
+  name       String
+  order      Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
+}
+
+// The catalog of known category names (used for autocomplete and optional
+// grouping). A category can exist here without a group, or be assigned one.
+model Category {
+  name      String         @id
+  groupId   String?
+  group     CategoryGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([groupId])
+}
+
+// Learned merchant -> category rules. Created whenever the user re-categorizes
+// a transaction; matching past & future transactions auto-update.
+model AutoRule {
+  id           String   @id @default(cuid())
+  matchType    String   @default("contains") // "contains" | "regex" | "exact"
+  pattern      String // merchant substring / regex, matched against merchantNormalized or description
+  category     String
+  entityId     String? // optional: rule scoped to one entity, null = applies everywhere
+  entity       Entity?  @relation(fields: [entityId], references: [id], onDelete: SetNull)
+  priority     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  transactions Transaction[]
+
+  @@index([pattern])
+}
+
+model IbkrPosition {
+  id               String         @id @default(cuid())
+  accountMapping   AccountMapping @relation(fields: [accountMappingId], references: [id])
+  accountMappingId String
+  symbol           String
+  description      String?
+  assetCategory    String?
+  quantity         Float
+  markPrice        Float
+  positionValue    Float
+  currency         String         @default("USD")
+  asOfDate         DateTime
+  createdAt        DateTime       @default(now())
+
+  @@index([accountMappingId, asOfDate])
+}
+
+model IbkrTrade {
+  id               String         @id @default(cuid())
+  accountMapping   AccountMapping @relation(fields: [accountMappingId], references: [id])
+  accountMappingId String
+  symbol           String
+  tradeDate        DateTime
+  quantity         Float
+  price            Float
+  proceeds         Float
+  commission       Float
+  currency         String         @default("USD")
+  buySell          String
+  sourceTradeId    String?
+  createdAt        DateTime       @default(now())
+
+  @@unique([accountMappingId, sourceTradeId])
+}
+
+model IbkrCashLine {
+  id               String         @id @default(cuid())
+  accountMapping   AccountMapping @relation(fields: [accountMappingId], references: [id])
+  accountMappingId String
+  currency         String
+  endingCash       Float
+  asOfDate         DateTime
+  createdAt        DateTime       @default(now())
+
+  @@index([accountMappingId, asOfDate])
+}
+
+// Portfolio balance snapshots parsed from Fair.co.il statement uploads.
+model PortfolioSnapshot {
+  id               String         @id @default(cuid())
+  accountMapping   AccountMapping @relation(fields: [accountMappingId], references: [id])
+  accountMappingId String
+  asOfDate         DateTime
+  totalValue       Float
+  currency         String         @default("ILS")
+  sourceFile       String?
+  createdAt        DateTime       @default(now())
+
+  @@index([accountMappingId, asOfDate])
+}
+
+// Raw upload record for Fair.co.il files, for auditability / re-parsing.
+model FileUpload {
+  id         String   @id @default(cuid())
+  filename   String
+  source     SourceSystem
+  rowCount   Int      @default(0)
+  status     String   @default("processed") // processed | failed
+  errorMsg   String?
+  createdAt  DateTime @default(now())
+}
+
+// Simple key-value app settings, e.g. default recategorize scope preference.
+model AppSetting {
+  key   String @id
+  value String
+}
+
+// A rule-engine-generated alert or suggestion (price creep, duplicate
+// subscriptions, weekly free cash, cashflow risk, idle cash, etc). Rows are
+// upserted per (entityId, ruleKey) each time the engine runs, so re-running
+// updates existing rows instead of accumulating duplicates; rows the latest
+// run no longer produces are deleted. entityId is null for insights that
+// span multiple entities (e.g. cross-entity cash optimization).
+model Insight {
+  id         String   @id @default(cuid())
+  entityId   String?
+  entity     Entity?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  ruleKey    String // stable identity within (entityId, type) for dedupe across runs
+  type       String // price_creep | duplicate_subscriptions | weekly_free_cash | cashflow_risk | idle_cash | owner_injection
+  severity   String   @default("info") // info | warning | critical
+  title      String
+  message    String
+  actionText String? // ready-to-copy text, e.g. a message to send to a provider
+  amount     Float? // headline number (savings/shortfall/idle amount), entity currency
+  metadata   String? // JSON blob with rule-specific structured details
+  dismissed  Boolean  @default(false)
+  computedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([entityId, ruleKey])
+  @@index([entityId])
+  @@index([type])
+}
+
+// Tracks last successful sync per source, for incremental pulls / token refresh state.
+model SyncState {
+  id            String   @id @default(cuid())
+  source        SourceSystem @unique
+  lastSyncedAt  DateTime?
+  cursor        String? // opaque pagination/token cursor
+  updatedAt     DateTime @updatedAt
+}

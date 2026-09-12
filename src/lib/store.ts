@@ -1,0 +1,60 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { Locale } from "@/lib/i18n";
+
+// An entity id from the Entity table, or the "aggregate" pseudo-entity that
+// means "show everything, unfiltered."
+export type EntityKey = string;
+export const AGGREGATE: EntityKey = "aggregate";
+
+export type DateRangePreset =
+  | "this_month"
+  | "last_month"
+  | "last_30_days"
+  | "last_3_months"
+  | "last_6_months"
+  | "custom";
+
+export interface DateRange {
+  preset: DateRangePreset;
+  from: string | null; // ISO date, only meaningful for "custom"
+  to: string | null;
+}
+
+export type Theme = "light" | "dark" | "system";
+export type FontSize = "sm" | "md" | "lg" | "xl";
+
+interface AppState {
+  entity: EntityKey;
+  setEntity: (e: EntityKey) => void;
+  locale: Locale;
+  setLocale: (l: Locale) => void;
+  transactionsDateRange: DateRange;
+  setTransactionsDateRange: (r: DateRange) => void;
+  theme: Theme;
+  setTheme: (t: Theme) => void;
+  fontSize: FontSize;
+  setFontSize: (s: FontSize) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (v: boolean) => void;
+}
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      entity: AGGREGATE,
+      setEntity: (entity) => set({ entity }),
+      locale: "he",
+      setLocale: (locale) => set({ locale }),
+      transactionsDateRange: { preset: "last_3_months", from: null, to: null },
+      setTransactionsDateRange: (transactionsDateRange) => set({ transactionsDateRange }),
+      theme: "system",
+      setTheme: (theme) => set({ theme }),
+      fontSize: "md",
+      setFontSize: (fontSize) => set({ fontSize }),
+      sidebarCollapsed: false,
+      setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+    }),
+    { name: "app-store" }
+  )
+);
