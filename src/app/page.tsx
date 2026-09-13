@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
+import { translateCategoryName } from "@/lib/categoryTranslations";
 import { useEntities } from "@/lib/useEntities";
 import AskBox from "@/components/AskBox";
 import InsightsPanel from "@/components/InsightsPanel";
@@ -353,7 +354,7 @@ export default function DashboardPage() {
               {categoryData.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
               {categoryData.map(([cat, amount]) => (
                 <div key={cat} className="flex items-center gap-3">
-                  <div className="w-28 text-sm truncate">{cat}</div>
+                  <div className="w-28 text-sm truncate">{translateCategoryName(cat, locale)}</div>
                   <div className="flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden">
                     <div
                       className="h-full bg-slate-700 dark:bg-slate-300"
@@ -394,7 +395,7 @@ export default function DashboardPage() {
             {insights.biggestTransactions.map((tx) => (
               <div key={tx.id} className="flex items-center justify-between text-sm">
                 <div className="truncate max-w-[50%]">{tx.description}</div>
-                <div className="text-slate-600 dark:text-slate-500 text-xs">{tx.category ?? t.uncategorized}</div>
+                <div className="text-slate-600 dark:text-slate-500 text-xs">{tx.category ? translateCategoryName(tx.category, locale) : t.uncategorized}</div>
                 <div className="tabular-nums text-rose-600">{tx.amount.toLocaleString()}</div>
               </div>
             ))}

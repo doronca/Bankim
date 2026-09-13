@@ -103,7 +103,10 @@ export async function runAssistantCommand(query: string, ctx: Ctx, locale: "he" 
       entityId: null,
     });
     return {
-      reply: `נוצר כלל: "${merchant.trim()}" → ${category.trim()}. עודכנו ${result.updatedCount} תנועות.`,
+      reply:
+        locale === "he"
+          ? `נוצר כלל: "${merchant.trim()}" → ${category.trim()}. עודכנו ${result.updatedCount} תנועות.`
+          : `Rule created: "${merchant.trim()}" → ${category.trim()}. Updated ${result.updatedCount} transactions.`,
     };
   }
 

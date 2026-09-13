@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
+import { translateCategoryName } from "@/lib/categoryTranslations";
 
 interface SubGroup {
   merchant: string;
@@ -209,7 +210,7 @@ function SubCard({
           )}
         </div>
       </div>
-      <div className="text-xs text-slate-700 dark:text-slate-400 mt-1">{g.category ?? t.uncategorized}</div>
+      <div className="text-xs text-slate-700 dark:text-slate-400 mt-1">{g.category ? translateCategoryName(g.category, locale) : t.uncategorized}</div>
       <div className="mt-3 flex items-baseline gap-2">
         <span className="text-lg font-semibold tabular-nums">{g.lastAmount.toLocaleString()}</span>
         <span className="text-xs text-slate-600 dark:text-slate-500 line-through tabular-nums">

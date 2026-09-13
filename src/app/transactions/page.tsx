@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
+import { translateCategoryName } from "@/lib/categoryTranslations";
 import { resolveDateRange } from "@/lib/dateRange";
 import DateRangePicker from "@/components/DateRangePicker";
 import TaskCard, { type TaskRow } from "@/components/TaskCard";
@@ -282,7 +283,7 @@ export default function TransactionsPage() {
           <option value="">{t.allCategories}</option>
           {categoryOptions.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {translateCategoryName(c, locale)}
             </option>
           ))}
         </select>
@@ -477,7 +478,7 @@ export default function TransactionsPage() {
                       className="text-xs rounded-full bg-slate-100 dark:bg-slate-700 dark:text-slate-200 px-2 py-0.5 hover:bg-slate-200 dark:hover:bg-slate-600"
                       onClick={() => startEdit(tx)}
                     >
-                      {tx.category ?? t.uncategorized}
+                      {tx.category ? translateCategoryName(tx.category, locale) : t.uncategorized}
                     </button>
                   )}
                 </td>

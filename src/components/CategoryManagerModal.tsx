@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { dict } from "@/lib/i18n";
+import { translateCategoryName } from "@/lib/categoryTranslations";
 
 interface CategoryRow {
   name: string;
@@ -98,7 +99,7 @@ export default function CategoryManagerModal({
           {groups.map((g) => (
             <div key={g.id} className="border border-slate-200 dark:border-slate-700 rounded-md p-3">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{g.name}</div>
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{translateCategoryName(g.name, locale)}</div>
                 <button className="text-xs text-rose-600" onClick={() => deleteGroup(g.id)}>
                   {t.deleteEntity}
                 </button>
@@ -109,7 +110,7 @@ export default function CategoryManagerModal({
                     key={c.name}
                     className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full px-2 py-0.5 flex items-center gap-1"
                   >
-                    {c.name}
+                    {translateCategoryName(c.name, locale)}
                     <button
                       className="text-slate-600 hover:text-slate-700 dark:hover:text-slate-200"
                       onClick={() => assignCategory(c.name, null)}
@@ -133,7 +134,7 @@ export default function CategoryManagerModal({
             <div className="flex flex-col gap-1.5">
               {ungrouped.map((c) => (
                 <div key={c.name} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="text-slate-700 dark:text-slate-200">{c.name}</span>
+                  <span className="text-slate-700 dark:text-slate-200">{translateCategoryName(c.name, locale)}</span>
                   <select
                     className="border border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 rounded text-xs px-1.5 py-1"
                     defaultValue=""
@@ -144,7 +145,7 @@ export default function CategoryManagerModal({
                     </option>
                     {allGroups.map((g) => (
                       <option key={g.id} value={g.id}>
-                        {g.name}
+                        {translateCategoryName(g.name, locale)}
                       </option>
                     ))}
                   </select>
