@@ -78,26 +78,26 @@ export default function TaskCard({
     <div className="border border-slate-200 dark:border-slate-700 rounded-md p-2.5 flex flex-col gap-1.5 bg-white dark:bg-slate-900">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className={`text-sm ${isDone ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-800 dark:text-slate-100"}`}>
+          <div className={`text-sm ${isDone ? "line-through text-slate-600 dark:text-slate-500" : "text-slate-800 dark:text-slate-100"}`}>
             {task.title}
           </div>
           {showTransaction && task.transaction && (
-            <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate">
+            <div className="text-[11px] text-slate-600 dark:text-slate-500 truncate">
               {task.transaction.description} · {dateFmt(task.transaction.date)}
             </div>
           )}
           <div className="text-[11px] mt-0.5 flex items-center gap-1.5">
             {task.dueDate ? (
-              <span className={isOverdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-500 dark:text-slate-400"}>
+              <span className={isOverdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-700 dark:text-slate-400"}>
                 {dateFmt(task.dueDate)} {isOverdue && `(${t.overdueTask})`}
               </span>
             ) : (
-              <span className="text-slate-400 dark:text-slate-500">{t.noDueDate}</span>
+              <span className="text-slate-600 dark:text-slate-500">{t.noDueDate}</span>
             )}
           </div>
         </div>
         <button
-          className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500 hover:text-red-500"
+          className="shrink-0 text-[11px] text-slate-600 dark:text-slate-500 hover:text-red-500"
           onClick={del}
           title={t.deleteTask}
         >
@@ -156,7 +156,7 @@ export default function TaskCard({
             autoFocus
             onKeyDown={(e) => e.key === "Enter" && addNote()}
           />
-          <button className="text-xs bg-slate-900 text-white rounded px-2 py-0.5" onClick={addNote}>
+          <button className="text-xs bg-primary text-white rounded px-2 py-0.5" onClick={addNote}>
             {t.save}
           </button>
         </div>

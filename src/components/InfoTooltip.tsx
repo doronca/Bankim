@@ -16,7 +16,7 @@ export default function InfoTooltip({ text }: { text: string }) {
         type="button"
         tabIndex={0}
         aria-label={text}
-        className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 text-[9px] leading-[12px] flex items-center justify-center hover:border-slate-500 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+        className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-500 text-[9px] leading-[12px] flex items-center justify-center hover:border-slate-500 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
         onClick={(e) => e.preventDefault()}
       >
         ?

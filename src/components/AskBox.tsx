@@ -52,7 +52,7 @@ export default function AskBox({ entity, locale }: { entity: EntityKey; locale: 
               key={i}
               className={`whitespace-pre-line rounded-md px-3 py-2 max-w-[85%] ${
                 m.role === "user"
-                  ? "bg-slate-900 text-white self-end"
+                  ? "bg-primary text-white self-end"
                   : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 self-start"
               }`}
             >
@@ -65,7 +65,7 @@ export default function AskBox({ entity, locale }: { entity: EntityKey; locale: 
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
-            className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm placeholder:text-slate-300 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400"
+            className="w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 rounded-md px-3 py-1.5 text-sm placeholder:text-slate-600 placeholder:opacity-100 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 focus:border-blue-400"
             placeholder={
               locale === "he"
                 ? 'לדוגמה: "כמה הוצאתי על Groceries החודש"'
@@ -82,14 +82,14 @@ export default function AskBox({ entity, locale }: { entity: EntityKey; locale: 
           )}
         </div>
         <button
-          className="rounded-md bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white text-sm px-3 py-1.5 disabled:opacity-50"
+          className="rounded-md bg-primary text-white text-sm px-3 py-1.5 disabled:opacity-50"
           disabled={loading || !input.trim()}
           onClick={send}
         >
           {loading ? "…" : locale === "he" ? "שלח" : "Send"}
         </button>
       </div>
-      <div className="text-[11px] text-slate-400 dark:text-slate-500">
+      <div className="text-[11px] text-slate-600 dark:text-slate-500">
         {locale === "he"
           ? "מבוסס חוקים קבועים, לא בינה מלאכותית. הקלד \"עזרה\" כדי לראות מה נתמך."
           : "Rule-based, not AI. Type a question or \"help\" to see what's supported."}

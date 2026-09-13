@@ -27,7 +27,7 @@ export default function ScrollToTopButton({
 
   return (
     <button
-      className="fixed bottom-6 end-6 z-40 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg w-10 h-10 flex items-center justify-center hover:opacity-90"
+      className="fixed bottom-6 end-6 z-40 rounded-full bg-primary text-white shadow-lg w-10 h-10 flex items-center justify-center hover:opacity-90"
       onClick={() => containerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
       title={t.scrollToTop}
       aria-label={t.scrollToTop}

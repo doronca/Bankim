@@ -104,7 +104,7 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
           <button
             onClick={refresh}
             disabled={refreshing}
-            className="text-xs px-2.5 py-1 rounded-md bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:opacity-90 disabled:opacity-50"
+            className="text-xs px-2.5 py-1 rounded-md bg-primary text-white hover:opacity-90 disabled:opacity-50"
           >
             {refreshing ? t.insightsRefreshing : t.insightsRefresh}
           </button>
@@ -124,9 +124,9 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
       )}
 
       {loading ? (
-        <div className="text-slate-400 dark:text-slate-500 text-sm">…</div>
+        <div className="text-slate-600 dark:text-slate-500 text-sm">…</div>
       ) : insights.length === 0 ? (
-        <div className="text-slate-400 dark:text-slate-500 text-sm">{t.insightsEmpty}</div>
+        <div className="text-slate-600 dark:text-slate-500 text-sm">{t.insightsEmpty}</div>
       ) : (
         <div className="flex flex-col gap-2">
           {insights.map((i) => (
@@ -136,7 +136,7 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
                   <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
                     {i.title}
                     {entity === AGGREGATE && i.entityName && (
-                      <span className="ms-2 text-[10px] font-normal text-slate-400 dark:text-slate-500">
+                      <span className="ms-2 text-[10px] font-normal text-slate-600 dark:text-slate-500">
                         {i.entityName}
                       </span>
                     )}
@@ -145,7 +145,7 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
                 </div>
                 <button
                   onClick={() => dismiss(i.id)}
-                  className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                  className="shrink-0 text-[11px] text-slate-600 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   {t.insightsDismiss}
                 </button>

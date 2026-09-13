@@ -66,7 +66,7 @@ export default function EntityManagerModal({
             <InfoTooltip text={t.tooltipEntityList} />
           </h2>
           <button
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            className="text-slate-600 hover:text-slate-700 dark:hover:text-slate-200"
             onClick={onClose}
           >
             ✕
@@ -94,7 +94,7 @@ export default function EntityManagerModal({
                     autoFocus
                   />
                   <button
-                    className="text-xs bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white rounded px-2 py-1"
+                    className="text-xs bg-primary text-white rounded px-2 py-1"
                     onClick={() => saveEdit(e.id)}
                   >
                     {t.save}
@@ -142,7 +142,7 @@ export default function EntityManagerModal({
             onKeyDown={(e) => e.key === "Enter" && addEntity()}
           />
           <button
-            className="text-xs bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white rounded-md px-3 py-1.5"
+            className="text-xs bg-primary text-white rounded-md px-3 py-1.5"
             onClick={addEntity}
           >
             {t.addEntity}

@@ -87,7 +87,7 @@ export default function SubscriptionsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.subscriptions}</h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-xs text-slate-700 dark:text-slate-400 mt-1">
           {locale === "he"
             ? "רק בתי עסק עם קצב חיוב סדיר (שבועי/חודשי/וכו') נספרים כמנוי. הוצאות חד-פעמיות או בלתי סדירות מופיעות בנפרד למטה. ניתן לתקן סיווג שגוי ידנית."
             : "Only merchants with a regular billing cadence (weekly/monthly/etc.) count as subscriptions. One-off or irregular expenses are listed separately below. Wrong classifications can be corrected manually."}
@@ -110,12 +110,12 @@ export default function SubscriptionsPage() {
               >
                 <div className="min-w-0">
                   <div className="truncate text-slate-800 dark:text-slate-100">{r.merchant}</div>
-                  <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                  <div className="text-[11px] text-slate-600 dark:text-slate-500">
                     {r.count}× · {r.lastAmount.toLocaleString()}
                   </div>
                 </div>
                 <button
-                  className="shrink-0 text-xs bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white rounded px-2 py-1"
+                  className="shrink-0 text-xs bg-primary text-white rounded px-2 py-1"
                   onClick={() => {
                     setOverride(r.merchant, true);
                     setSearchInput("");
@@ -130,14 +130,14 @@ export default function SubscriptionsPage() {
         )}
       </div>
 
-      {loading && <div className="text-slate-400 dark:text-slate-500">…</div>}
+      {loading && <div className="text-slate-600 dark:text-slate-500">…</div>}
 
       {!loading && (
         <section>
           <h2 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
             {locale === "he" ? `מנויים חוזרים (${recurring.length})` : `Recurring subscriptions (${recurring.length})`}
           </h2>
-          {recurring.length === 0 && <div className="text-slate-400 dark:text-slate-500 text-sm">—</div>}
+          {recurring.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {recurring.map((g) => (
               <SubCard key={g.merchant} g={g} locale={locale} t={t} onOverride={setOverride} />
@@ -198,7 +198,7 @@ function SubCard({
             </span>
           )}
           {g.cadence && (
-            <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full px-2 py-0.5">
+            <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-400 rounded-full px-2 py-0.5">
               {CADENCE_LABELS[g.cadence]?.[locale] ?? g.cadence}
             </span>
           )}
@@ -209,20 +209,20 @@ function SubCard({
           )}
         </div>
       </div>
-      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{g.category ?? t.uncategorized}</div>
+      <div className="text-xs text-slate-700 dark:text-slate-400 mt-1">{g.category ?? t.uncategorized}</div>
       <div className="mt-3 flex items-baseline gap-2">
         <span className="text-lg font-semibold tabular-nums">{g.lastAmount.toLocaleString()}</span>
-        <span className="text-xs text-slate-400 dark:text-slate-500 line-through tabular-nums">
+        <span className="text-xs text-slate-600 dark:text-slate-500 line-through tabular-nums">
           {g.previousAmount.toLocaleString()}
         </span>
         {g.percentIncrease !== null && (
-          <span className={`text-xs tabular-nums ${g.alert ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400"}`}>
+          <span className={`text-xs tabular-nums ${g.alert ? "text-red-600 dark:text-red-400" : "text-slate-700 dark:text-slate-400"}`}>
             {(g.percentIncrease * 100).toFixed(1)}%
           </span>
         )}
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="text-xs text-slate-400 dark:text-slate-500">
+        <div className="text-xs text-slate-600 dark:text-slate-500">
           {g.occurrences.length} {locale === "he" ? "חיובים" : "charges"}
         </div>
         <div className="flex gap-2">
@@ -235,14 +235,14 @@ function SubCard({
             </button>
           ) : g.isRecurring ? (
             <button
-              className="text-[11px] text-slate-500 dark:text-slate-400 underline"
+              className="text-[11px] text-slate-700 dark:text-slate-400 underline"
               onClick={() => onOverride(g.merchant, false)}
             >
               {t.markNotSubscription}
             </button>
           ) : (
             <button
-              className="text-[11px] text-slate-500 dark:text-slate-400 underline"
+              className="text-[11px] text-slate-700 dark:text-slate-400 underline"
               onClick={() => onOverride(g.merchant, true)}
             >
               {t.markAsSubscription}

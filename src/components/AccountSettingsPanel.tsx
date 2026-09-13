@@ -107,11 +107,11 @@ export default function AccountSettingsPanel({
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div className="absolute end-0 top-8 z-40 w-72 max-h-[70vh] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-xl p-3 flex flex-col gap-3">
-            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+            <div className="text-[11px] font-medium text-slate-700 dark:text-slate-400 truncate">
               {t.allSettingsFor} {m.nickname ?? m.displayName}
             </div>
 
-            <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+            <label className="text-[11px] text-slate-700 dark:text-slate-400 flex flex-col gap-1">
               <span className="flex items-center gap-1">
                 {t.cardNickname}
                 <InfoTooltip text={t.tooltipNickname} />
@@ -125,7 +125,7 @@ export default function AccountSettingsPanel({
               />
             </label>
 
-            <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+            <label className="text-[11px] text-slate-700 dark:text-slate-400 flex flex-col gap-1">
               <span className="flex items-center gap-1">
                 {t.filterByEntity}
                 <InfoTooltip text={t.tooltipEntityAssign} />
@@ -146,7 +146,7 @@ export default function AccountSettingsPanel({
             </label>
 
             {mergeCandidates.length > 0 && (
-              <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+              <label className="text-[11px] text-slate-700 dark:text-slate-400 flex flex-col gap-1">
                 <span className="flex items-center gap-1">
                   {t.mergeAccount}
                   <InfoTooltip text={t.tooltipMerge} />
@@ -168,7 +168,7 @@ export default function AccountSettingsPanel({
 
             {isCard && (
               <>
-                <label className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-700">
+                <label className="text-[11px] text-slate-700 dark:text-slate-400 flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-700">
                   <input
                     type="checkbox"
                     checked={debitInput}
@@ -182,7 +182,7 @@ export default function AccountSettingsPanel({
 
                 {!debitInput && (
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <span className="text-[11px] text-slate-700 dark:text-slate-400 flex items-center gap-1">
                       {t.setBillingDay}
                       <InfoTooltip text={t.tooltipBillingDay} />
                     </span>
@@ -196,7 +196,7 @@ export default function AccountSettingsPanel({
                           type="button"
                           className={`text-xs rounded px-2 py-1 border ${
                             !showOtherDay && dayInput === String(d)
-                              ? "bg-slate-900 text-white border-slate-900"
+                              ? "bg-primary text-white border-primary"
                               : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 dark:text-slate-200"
                           }`}
                           onClick={() => {
@@ -211,7 +211,7 @@ export default function AccountSettingsPanel({
                         type="button"
                         className={`text-xs rounded px-2 py-1 border ${
                           showOtherDay
-                            ? "bg-slate-900 text-white border-slate-900"
+                            ? "bg-primary text-white border-primary"
                             : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 dark:text-slate-200"
                         }`}
                         onClick={() => setShowOtherDay(true)}
@@ -234,7 +234,7 @@ export default function AccountSettingsPanel({
                 )}
 
                 {!debitInput && (
-                  <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+                  <label className="text-[11px] text-slate-700 dark:text-slate-400 flex flex-col gap-1">
                     <span className="flex items-center gap-1">
                       {t.maxChargeAmountLabel}
                       <InfoTooltip text={t.tooltipMaxCharge} />
@@ -260,7 +260,7 @@ export default function AccountSettingsPanel({
               >
                 {t.cancel}
               </button>
-              <button className="text-xs bg-slate-900 text-white rounded px-2 py-1" onClick={save}>
+              <button className="text-xs bg-primary text-white rounded px-2 py-1" onClick={save}>
                 {t.save}
               </button>
             </div>

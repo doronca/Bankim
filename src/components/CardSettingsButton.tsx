@@ -65,7 +65,7 @@ export default function CardSettingsButton({
   return (
     <div className="relative shrink-0">
       <button
-        className="w-6 h-6 rounded-md flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+        className="w-6 h-6 rounded-md flex items-center justify-center text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
         title={t.cardSettings}
         onClick={() => {
           setNicknameInput(nickname ?? "");
@@ -86,7 +86,7 @@ export default function CardSettingsButton({
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute end-0 top-7 z-20 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg p-3 flex flex-col gap-2">
-            <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+            <label className="text-[11px] text-slate-700 dark:text-slate-400 flex flex-col gap-1">
               {t.cardNickname}
               <input
                 className="border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded px-1.5 py-1 text-xs"
@@ -96,7 +96,7 @@ export default function CardSettingsButton({
               />
             </label>
 
-            <label className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <label className="text-[11px] text-slate-700 dark:text-slate-400 flex items-center gap-1.5">
               <input
                 type="checkbox"
                 checked={debitInput}
@@ -107,11 +107,11 @@ export default function CardSettingsButton({
 
             {!debitInput && (
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">{t.setBillingDay}</span>
+                <span className="text-[11px] text-slate-700 dark:text-slate-400">{t.setBillingDay}</span>
                 {!billingDay && (
                   <span className="text-[10px] text-amber-600 dark:text-amber-400">{t.billingDayRequiredHint}</span>
                 )}
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">{t.billingDaySuggested}</span>
+                <span className="text-[10px] text-slate-600 dark:text-slate-500">{t.billingDaySuggested}</span>
                 <div className="flex gap-1 flex-wrap">
                   {SUGGESTED_DAYS.map((d) => (
                     <button
@@ -119,7 +119,7 @@ export default function CardSettingsButton({
                       type="button"
                       className={`text-xs rounded px-2 py-1 border ${
                         !showOtherDay && dayInput === String(d)
-                          ? "bg-slate-900 text-white border-slate-900"
+                          ? "bg-primary text-white border-primary"
                           : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 dark:text-slate-200"
                       }`}
                       onClick={() => {
@@ -134,7 +134,7 @@ export default function CardSettingsButton({
                     type="button"
                     className={`text-xs rounded px-2 py-1 border ${
                       showOtherDay
-                        ? "bg-slate-900 text-white border-slate-900"
+                        ? "bg-primary text-white border-primary"
                         : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 dark:text-slate-200"
                     }`}
                     onClick={() => setShowOtherDay(true)}
@@ -157,7 +157,7 @@ export default function CardSettingsButton({
             )}
 
             {!debitInput && (
-              <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+              <label className="text-[11px] text-slate-700 dark:text-slate-400 flex flex-col gap-1">
                 {t.maxChargeAmountLabel}
                 <input
                   type="number"
@@ -168,7 +168,7 @@ export default function CardSettingsButton({
                   onChange={(e) => setMaxChargeInput(e.target.value)}
                   placeholder={t.maxChargeAmountPlaceholder}
                 />
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">
+                <span className="text-[10px] text-slate-600 dark:text-slate-500 leading-snug">
                   {t.maxChargeAmountHint}
                 </span>
               </label>
@@ -181,7 +181,7 @@ export default function CardSettingsButton({
               >
                 {t.cancel}
               </button>
-              <button className="text-xs bg-slate-900 text-white rounded px-2 py-1" onClick={save}>
+              <button className="text-xs bg-primary text-white rounded px-2 py-1" onClick={save}>
                 {t.save}
               </button>
             </div>

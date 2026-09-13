@@ -73,7 +73,7 @@ export default function CategoryManagerModal({
       >
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.categoryGroups}</h2>
-          <button className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" onClick={onClose}>
+          <button className="text-slate-600 hover:text-slate-700 dark:hover:text-slate-200" onClick={onClose}>
             ✕
           </button>
         </div>
@@ -87,7 +87,7 @@ export default function CategoryManagerModal({
             onKeyDown={(e) => e.key === "Enter" && addGroup()}
           />
           <button
-            className="text-xs bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white rounded-md px-3 py-1.5"
+            className="text-xs bg-primary text-white rounded-md px-3 py-1.5"
             onClick={addGroup}
           >
             {t.addGroup}
@@ -111,7 +111,7 @@ export default function CategoryManagerModal({
                   >
                     {c.name}
                     <button
-                      className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                      className="text-slate-600 hover:text-slate-700 dark:hover:text-slate-200"
                       onClick={() => assignCategory(c.name, null)}
                       title={t.ungrouped}
                     >
@@ -120,7 +120,7 @@ export default function CategoryManagerModal({
                   </span>
                 ))}
                 {g.categories.length === 0 && (
-                  <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+                  <span className="text-xs text-slate-600 dark:text-slate-500">—</span>
                 )}
               </div>
             </div>
@@ -129,7 +129,7 @@ export default function CategoryManagerModal({
 
         {ungrouped.length > 0 && (
           <div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">{t.ungrouped}</div>
+            <div className="text-xs text-slate-700 dark:text-slate-400 mb-1.5">{t.ungrouped}</div>
             <div className="flex flex-col gap-1.5">
               {ungrouped.map((c) => (
                 <div key={c.name} className="flex items-center justify-between gap-2 text-sm">

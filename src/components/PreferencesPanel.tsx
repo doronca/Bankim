@@ -24,17 +24,17 @@ export default function PreferencesPanel({ locale }: { locale: "he" | "en" }) {
 
   return (
     <div className="flex flex-col gap-2 text-xs">
-      <div className="text-slate-400 dark:text-slate-500 font-medium">{t.preferences}</div>
+      <div className="text-slate-600 dark:text-slate-500 font-medium">{t.preferences}</div>
 
       <div>
-        <div className="text-slate-500 dark:text-slate-400 mb-1">{t.theme}</div>
+        <div className="text-slate-700 dark:text-slate-400 mb-1">{t.theme}</div>
         <div className="flex gap-1">
           {THEME_OPTIONS.map((opt) => (
             <button
               key={opt}
               className={`flex-1 rounded-md px-1.5 py-1 border text-[11px] ${
                 theme === opt
-                  ? "bg-blue-800 text-white border-blue-800"
+                  ? "bg-primary text-white border-primary"
                   : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
               onClick={() => setTheme(opt)}
@@ -46,14 +46,14 @@ export default function PreferencesPanel({ locale }: { locale: "he" | "en" }) {
       </div>
 
       <div>
-        <div className="text-slate-500 dark:text-slate-400 mb-1">{t.fontSize}</div>
+        <div className="text-slate-700 dark:text-slate-400 mb-1">{t.fontSize}</div>
         <div className="flex gap-1">
           {FONT_OPTIONS.map((opt) => (
             <button
               key={opt}
               className={`flex-1 rounded-md px-1 py-1 border text-[11px] ${
                 fontSize === opt
-                  ? "bg-blue-800 text-white border-blue-800"
+                  ? "bg-primary text-white border-primary"
                   : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
               onClick={() => setFontSize(opt)}

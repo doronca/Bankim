@@ -289,7 +289,7 @@ export default function OnboardingPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.onboarding}</h1>
         <button
-          className="text-xs text-blue-600 dark:text-blue-400 underline"
+          className="text-xs text-link dark:text-blue-400 underline"
           onClick={() => setGuideSection("general")}
         >
           {t.setupGuide}
@@ -327,7 +327,7 @@ export default function OnboardingPage() {
               onChange={(e) => setPsuId(e.target.value)}
             />
             <button
-              className="rounded-md bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white text-sm px-3 py-1.5 disabled:opacity-50"
+              className="rounded-md bg-primary text-white text-sm px-3 py-1.5 disabled:opacity-50"
               disabled={!selectedProvider || !psuId || connecting}
               onClick={startConnection}
             >
@@ -341,12 +341,12 @@ export default function OnboardingPage() {
               href={scaLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 underline"
+              className="text-link underline"
             >
               {locale === "he" ? "1. פתח והתחבר דרך הבנק" : "1. Open and authenticate with your bank"}
             </a>
             <button
-              className="rounded-md bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white text-sm px-3 py-1.5 disabled:opacity-50"
+              className="rounded-md bg-primary text-white text-sm px-3 py-1.5 disabled:opacity-50"
               disabled={finalizing}
               onClick={finalize}
             >
@@ -358,19 +358,19 @@ export default function OnboardingPage() {
             </button>
           </div>
         )}
-        {connectMsg && <div className="text-xs text-slate-500 dark:text-slate-400">{connectMsg}</div>}
+        {connectMsg && <div className="text-xs text-slate-700 dark:text-slate-400">{connectMsg}</div>}
       </section>
 
       <section className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 flex flex-wrap gap-3">
         <button
-          className="rounded-md bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white text-sm px-3 py-2 disabled:opacity-50"
+          className="rounded-md bg-primary text-white text-sm px-3 py-2 disabled:opacity-50"
           disabled={syncing === "openfinance"}
           onClick={() => runSync("openfinance")}
         >
           {syncing === "openfinance" ? "…" : t.syncOpenFinance}
         </button>
         <button
-          className="rounded-md bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white text-sm px-3 py-2 disabled:opacity-50"
+          className="rounded-md bg-primary text-white text-sm px-3 py-2 disabled:opacity-50"
           disabled={syncing === "ibkr"}
           onClick={() => runSync("ibkr")}
         >
@@ -384,13 +384,13 @@ export default function OnboardingPage() {
             className="text-sm"
             onChange={(e) => e.target.files?.[0] && uploadFair(e.target.files[0])}
           />
-          <span className="text-xs text-slate-500 dark:text-slate-400">{t.uploadFair}</span>
+          <span className="text-xs text-slate-700 dark:text-slate-400">{t.uploadFair}</span>
         </div>
         {syncError && (
           <div className="text-xs text-red-600 dark:text-red-400 w-full flex items-center gap-2 flex-wrap">
             <span>{syncError.message}</span>
             <button
-              className="text-blue-600 dark:text-blue-400 underline shrink-0"
+              className="text-link dark:text-blue-400 underline shrink-0"
               onClick={() => setGuideSection(syncError.source)}
             >
               {t.setupGuideOpenButton}
@@ -398,11 +398,11 @@ export default function OnboardingPage() {
           </div>
         )}
         {uploadMsg && (
-          <div className="text-xs text-slate-500 dark:text-slate-400 w-full flex items-center gap-2 flex-wrap">
+          <div className="text-xs text-slate-700 dark:text-slate-400 w-full flex items-center gap-2 flex-wrap">
             <span>{uploadMsg}</span>
             {uploadError && (
               <button
-                className="text-blue-600 dark:text-blue-400 underline shrink-0"
+                className="text-link dark:text-blue-400 underline shrink-0"
                 onClick={() => setGuideSection("fair")}
               >
                 {t.setupGuideOpenButton}
@@ -436,10 +436,10 @@ export default function OnboardingPage() {
         >
           {t.categoryGroups}
         </button>
-        {presetMsg && <div className="text-xs text-slate-500 dark:text-slate-400 w-full">{presetMsg}</div>}
+        {presetMsg && <div className="text-xs text-slate-700 dark:text-slate-400 w-full">{presetMsg}</div>}
       </section>
 
-      {loading && <div className="text-slate-400 dark:text-slate-500">…</div>}
+      {loading && <div className="text-slate-600 dark:text-slate-500">…</div>}
 
       {!loading && mappings.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -452,7 +452,7 @@ export default function OnboardingPage() {
             />
             {search && (
               <button
-                className="absolute end-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                className="absolute end-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-700 dark:hover:text-slate-200"
                 onClick={() => setSearch("")}
                 title={t.clearSearch}
               >
@@ -468,7 +468,7 @@ export default function OnboardingPage() {
                   key={f.key}
                   className={`px-2.5 py-1.5 ${
                     quickFilter === f.key
-                      ? "bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white"
+                      ? "bg-primary text-white"
                       : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                   }`}
                   onClick={() => setQuickFilter(f.key)}
@@ -492,7 +492,7 @@ export default function OnboardingPage() {
                 </option>
               ))}
             </select>
-            <label className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <label className="text-xs text-slate-700 dark:text-slate-400 flex items-center gap-1.5">
               <input
                 type="checkbox"
                 checked={hideZeroCharge}
@@ -563,10 +563,10 @@ export default function OnboardingPage() {
           {[...entityGroups.entries()].map(([key, group]) => (
             <details key={key} open className="bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                <span className="text-slate-400">📁</span>
+                <span className="text-slate-600">📁</span>
                 {group.entity?.icon && <span>{group.entity.icon}</span>}
                 <span>{group.entity?.name ?? t.unassignedGroup}</span>
-                <span className="text-xs text-slate-400 dark:text-slate-500 font-normal">({group.roots.length})</span>
+                <span className="text-xs text-slate-600 dark:text-slate-500 font-normal">({group.roots.length})</span>
               </summary>
               <div className="flex flex-col gap-2 mt-3 ps-2 border-s-2 border-slate-200 dark:border-slate-700">
                 {group.roots.map((root) => {
@@ -630,7 +630,7 @@ export default function OnboardingPage() {
       {!loading &&
         filteredUnmapped.length === 0 &&
         (useFlatList ? flatFiltered.length === 0 : entityGroups.size === 0) && (
-          <div className="text-sm text-slate-400 dark:text-slate-500">{t.noMatchingAccounts}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-500">{t.noMatchingAccounts}</div>
         )}
 
       {categoryManagerOpen && (
@@ -691,7 +691,7 @@ function AccountRow({
               autoFocus
             />
             <button
-              className="text-xs bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white rounded px-2 py-1 shrink-0"
+              className="text-xs bg-primary text-white rounded px-2 py-1 shrink-0"
               onClick={() => {
                 onNickname(m.id, nicknameInput);
                 setEditingNickname(false);
@@ -704,7 +704,7 @@ function AccountRow({
           <div className="flex items-center gap-2 mb-0.5">
             <div className="text-sm font-medium break-words text-slate-800 dark:text-slate-100">{m.nickname ?? m.displayName}</div>
             <button
-              className="text-[11px] text-blue-600 underline shrink-0"
+              className="text-[11px] text-link underline shrink-0"
               onClick={() => {
                 setNicknameInput(m.nickname ?? "");
                 setEditingNickname(true);
@@ -715,17 +715,17 @@ function AccountRow({
             <InfoTooltip text={t.tooltipNickname} />
           </div>
         )}
-        {m.nickname && <div className="text-xs text-slate-400 dark:text-slate-500 break-words">{m.displayName}</div>}
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+        {m.nickname && <div className="text-xs text-slate-600 dark:text-slate-500 break-words">{m.displayName}</div>}
+        <div className="text-xs text-slate-700 dark:text-slate-400 mt-0.5">
           {[m.providerName, m.accountNumber, m.accountType, m.currency].filter(Boolean).join(" · ")}
         </div>
         {m.accountType === "credit_card" && billingEstimate && (
-          <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+          <div className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">
             {t.billingDayEstimate}: ~{billingEstimate.dayOfMonth}
           </div>
         )}
         {m.mergedInto ? (
-          <div className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1.5">
+          <div className="text-xs text-link dark:text-blue-400 mt-1 flex items-center gap-1.5">
             {t.mergedInto}: {m.mergedInto.nickname ?? m.mergedInto.displayName}
             <button className="underline" onClick={() => onMerge(m.id, null)}>
               {t.unmerge}

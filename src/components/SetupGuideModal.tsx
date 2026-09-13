@@ -38,7 +38,7 @@ export default function SetupGuideModal({
       >
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.setupGuide}</h2>
-          <button className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200" onClick={onClose}>
+          <button className="text-slate-600 hover:text-slate-700 dark:hover:text-slate-200" onClick={onClose}>
             ✕
           </button>
         </div>
@@ -49,7 +49,7 @@ export default function SetupGuideModal({
               key={s.key}
               className={`text-xs rounded-md px-2.5 py-1.5 ${
                 section === s.key
-                  ? "bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white"
+                  ? "bg-primary text-white"
                   : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
               }`}
               onClick={() => setSection(s.key)}

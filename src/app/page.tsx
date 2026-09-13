@@ -90,8 +90,8 @@ export default function DashboardPage() {
 
   useEffect(loadForecastCards, []);
 
-  if (loading) return <div className="text-slate-500">…</div>;
-  if (!summary) return <div className="text-slate-500">No data yet.</div>;
+  if (loading) return <div className="text-slate-700 dark:text-slate-300">…</div>;
+  if (!summary) return <div className="text-slate-700 dark:text-slate-300">No data yet.</div>;
 
   const monthlyData = Object.entries(summary.monthly)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -108,12 +108,12 @@ export default function DashboardPage() {
     locale === "he" ? `מרכז בקרה פיננסי — ${entityLabel}` : `${entityLabel.toUpperCase()} FINANCIAL COMMAND CENTER`;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{title}</h1>
         {entities.length > 1 && entity !== AGGREGATE && (
           <button
-            className="text-xs text-blue-600 dark:text-blue-400 underline shrink-0"
+            className="text-xs text-link dark:text-blue-400 underline shrink-0"
             onClick={() => setEntity(AGGREGATE)}
           >
             {t.showAllEntities}
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 onClick={() => setEntity(e.id)}
                 className={`text-start rounded-xl border p-4 transition ${
                   isActive
-                    ? "border-slate-800 dark:border-slate-200 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                    ? "border-primary bg-primary text-white"
                     : "border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-500"
                 }`}
               >
@@ -143,13 +143,13 @@ export default function DashboardPage() {
                   {e.icon && <span>{e.icon}</span>}
                   <span className="truncate">{e.name}</span>
                 </div>
-                <div className={`text-[11px] mt-2 ${isActive ? "text-slate-300 dark:text-slate-600" : "text-slate-500 dark:text-slate-400"}`}>
+                <div className={`text-[11px] mt-2 ${isActive ? "text-slate-300 dark:text-slate-600" : "text-slate-700 dark:text-slate-400"}`}>
                   {t.pendingAmount}
                 </div>
                 <div className="text-lg font-bold tabular-nums">
                   {pendingTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
-                <div className={`text-[11px] mt-1 flex items-center gap-2 flex-wrap ${isActive ? "text-slate-300 dark:text-slate-600" : "text-slate-500 dark:text-slate-400"}`}>
+                <div className={`text-[11px] mt-1 flex items-center gap-2 flex-wrap ${isActive ? "text-slate-300 dark:text-slate-600" : "text-slate-700 dark:text-slate-400"}`}>
                   {dates.length > 0 && (
                     <span>
                       {dates
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{card.name}</div>
-                        {last4 && <div className="text-[11px] text-slate-400 dark:text-slate-500">•••• {last4}</div>}
+                        {last4 && <div className="text-[11px] text-slate-600 dark:text-slate-500">•••• {last4}</div>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         {card.futureTransactionsCount > 0 && (
@@ -206,13 +206,13 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="mt-2">
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <div className="text-[11px] text-slate-700 dark:text-slate-400">
                         {t.pendingAmount}
                         {card.isEstimate && <span className="ms-1 opacity-70">(~)</span>}
                       </div>
                       <div
                         className={`text-lg font-bold tabular-nums ${
-                          card.pendingAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500"
+                          card.pendingAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
                         }`}
                       >
                         {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400 dark:text-slate-500">
+                      <span className="text-slate-600 dark:text-slate-500">
                         {card.previousAmount !== null &&
                           `${locale === "he" ? "חיוב קודם" : "Previous"}: ${card.previousAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                       </span>
@@ -283,13 +283,13 @@ export default function DashboardPage() {
           icon={<CreditCardIcon />}
         />
         <div className={`${CARD} relative overflow-hidden`}>
-          <div className="text-xs text-slate-500 dark:text-slate-400">{t.predictedNextCharge}</div>
+          <div className="text-xs text-slate-700 dark:text-slate-400">{t.predictedNextCharge}</div>
           <div className="text-2xl font-semibold tabular-nums mt-1">
             {summary.cards.predictedNextCharge !== null
               ? summary.cards.predictedNextCharge.toLocaleString(undefined, { maximumFractionDigits: 0 })
               : "—"}
           </div>
-          <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{t.predictedNextChargeHint}</div>
+          <div className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5">{t.predictedNextChargeHint}</div>
         </div>
       </section>
 
@@ -311,7 +311,7 @@ export default function DashboardPage() {
       <section className={CARD}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-medium text-slate-600 dark:text-slate-300">{t.cashflow}</h2>
-          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-600" /> {t.income}
             </span>
@@ -342,13 +342,13 @@ export default function DashboardPage() {
             <h2 className="text-sm font-medium text-slate-600 dark:text-slate-300">{t.category}</h2>
             <div className="flex text-[11px] rounded-md overflow-hidden border border-slate-200 dark:border-slate-700">
               <button
-                className={`px-2 py-1 ${!categoryGrouped ? "bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white" : "text-slate-500 dark:text-slate-400"}`}
+                className={`px-2 py-1 ${!categoryGrouped ? "bg-primary text-white" : "text-slate-700 dark:text-slate-400"}`}
                 onClick={() => setCategoryGrouped(false)}
               >
                 {t.groupByCategory}
               </button>
               <button
-                className={`px-2 py-1 ${categoryGrouped ? "bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white" : "text-slate-500 dark:text-slate-400"}`}
+                className={`px-2 py-1 ${categoryGrouped ? "bg-primary text-white" : "text-slate-700 dark:text-slate-400"}`}
                 onClick={() => setCategoryGrouped(true)}
               >
                 {t.groupByGroup}
@@ -356,7 +356,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            {categoryData.length === 0 && <div className="text-slate-400 dark:text-slate-500 text-sm">—</div>}
+            {categoryData.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
             {categoryData.map(([cat, amount]) => (
               <div key={cat} className="flex items-center gap-3">
                 <div className="w-28 text-sm truncate">{cat}</div>
@@ -377,11 +377,11 @@ export default function DashboardPage() {
             {locale === "he" ? "בתי עסק מובילים (חודש נוכחי)" : "Top merchants (this month)"}
           </h2>
           <div className="flex flex-col gap-2">
-            {insights.topMerchants.length === 0 && <div className="text-slate-400 dark:text-slate-500 text-sm">—</div>}
+            {insights.topMerchants.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
             {insights.topMerchants.map((m) => (
               <div key={m.merchant} className="flex items-center justify-between text-sm">
                 <div className="truncate max-w-[60%]">{m.merchant}</div>
-                <div className="text-slate-400 dark:text-slate-500 text-xs">{m.count}×</div>
+                <div className="text-slate-600 dark:text-slate-500 text-xs">{m.count}×</div>
                 <div className="tabular-nums">{m.amount.toLocaleString()}</div>
               </div>
             ))}
@@ -394,11 +394,11 @@ export default function DashboardPage() {
           {locale === "he" ? "התנועות הגדולות ביותר (חודש נוכחי)" : "Biggest transactions (this month)"}
         </h2>
         <div className="flex flex-col gap-2">
-          {insights.biggestTransactions.length === 0 && <div className="text-slate-400 dark:text-slate-500 text-sm">—</div>}
+          {insights.biggestTransactions.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
           {insights.biggestTransactions.map((tx) => (
             <div key={tx.id} className="flex items-center justify-between text-sm">
               <div className="truncate max-w-[50%]">{tx.description}</div>
-              <div className="text-slate-400 dark:text-slate-500 text-xs">{tx.category ?? t.uncategorized}</div>
+              <div className="text-slate-600 dark:text-slate-500 text-xs">{tx.category ?? t.uncategorized}</div>
               <div className="tabular-nums text-rose-600">{tx.amount.toLocaleString()}</div>
             </div>
           ))}
@@ -421,10 +421,10 @@ function NetWorthCard({
 }) {
   return (
     <div className={`${CARD} relative overflow-hidden`}>
-      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-xs text-slate-700 dark:text-slate-400">{label}</div>
       <div className="text-2xl font-semibold tabular-nums mt-1">
         {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}
-        <span className="text-sm text-slate-400 dark:text-slate-500">{currency}</span>
+        <span className="text-sm text-slate-600 dark:text-slate-500">{currency}</span>
       </div>
       <div className="absolute bottom-2 end-2 text-slate-300 dark:text-slate-600">{icon}</div>
     </div>
@@ -444,7 +444,7 @@ function StatCard({
 }) {
   return (
     <div className={`${CARD} relative overflow-hidden`}>
-      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-xs text-slate-700 dark:text-slate-400">{label}</div>
       <div className={`text-2xl font-semibold tabular-nums mt-1 ${tone === "bad" ? "text-rose-600" : ""}`}>
         {value}
       </div>
@@ -470,7 +470,7 @@ function ChangeCard({
       <div className="text-sm text-slate-600 dark:text-slate-300">{label}</div>
       <div
         className={`text-xl font-bold tabular-nums ${
-          isGood === null ? "text-slate-400 dark:text-slate-500" : isGood ? goodColorClass : "text-rose-600"
+          isGood === null ? "text-slate-600 dark:text-slate-500" : isGood ? goodColorClass : "text-rose-600"
         }`}
       >
         {pct === null ? "—" : `${pct >= 0 ? "+" : ""}${(pct * 100).toFixed(1)}%`}

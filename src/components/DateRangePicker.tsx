@@ -42,7 +42,7 @@ export default function DateRangePicker({
             value={value.from ?? ""}
             onChange={(e) => onChange({ ...value, from: e.target.value })}
           />
-          <span className="text-slate-400 text-sm">{locale === "he" ? "עד" : "to"}</span>
+          <span className="text-slate-600 text-sm">{locale === "he" ? "עד" : "to"}</span>
           <input
             type="date"
             className="border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md text-sm px-2 py-1.5"

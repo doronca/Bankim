@@ -341,25 +341,25 @@ export default function TransactionsPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!loading && (
-          <div className="text-xs text-slate-400 dark:text-slate-500">
+          <div className="text-xs text-slate-600 dark:text-slate-500">
             {transactions.length} {locale === "he" ? "תנועות" : "transactions"}
           </div>
         )}
         {showRunningBalance ? (
-          <div className="text-xs text-slate-500 dark:text-slate-400" title={t.runningBalanceHint}>
+          <div className="text-xs text-slate-700 dark:text-slate-400" title={t.runningBalanceHint}>
             {t.runningBalance}:{" "}
             <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
               {(runningBalances?.get(transactions[0]?.id) ?? 0).toLocaleString()} {currency}
             </span>
           </div>
         ) : (
-          <div className="text-xs text-slate-400 dark:text-slate-500">{t.selectSingleAccountForBalance}</div>
+          <div className="text-xs text-slate-600 dark:text-slate-500">{t.selectSingleAccountForBalance}</div>
         )}
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-start">
+          <thead className="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-400 text-start">
             <tr>
               <th className="text-start px-3 py-2 font-medium">{t.date}</th>
               <th className="text-start px-3 py-2 font-medium">{t.merchant}</th>
@@ -389,12 +389,12 @@ export default function TransactionsPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={showRunningBalance ? 8 : 7} className="px-3 py-6 text-center text-slate-400 dark:text-slate-500">…</td>
+                <td colSpan={showRunningBalance ? 8 : 7} className="px-3 py-6 text-center text-slate-600 dark:text-slate-500">…</td>
               </tr>
             )}
             {!loading && transactions.length === 0 && (
               <tr>
-                <td colSpan={showRunningBalance ? 8 : 7} className="px-3 py-6 text-center text-slate-400 dark:text-slate-500">—</td>
+                <td colSpan={showRunningBalance ? 8 : 7} className="px-3 py-6 text-center text-slate-600 dark:text-slate-500">—</td>
               </tr>
             )}
             {transactions.map((tx) => {
@@ -417,7 +417,7 @@ export default function TransactionsPage() {
                     <span className="truncate">{tx.description}</span>
                     {tx.additionalInfo && (
                       <button
-                        className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs leading-none"
+                        className="shrink-0 text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs leading-none"
                         title={tx.additionalInfo}
                         onClick={() => setExpandedInfoTxId(expandedInfoTxId === tx.id ? null : tx.id)}
                       >
@@ -449,7 +449,7 @@ export default function TransactionsPage() {
                           </label>
                         ))}
                       </div>
-                      <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                      <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-400">
                         <input
                           type="checkbox"
                           checked={rememberDefault}
@@ -459,7 +459,7 @@ export default function TransactionsPage() {
                       </label>
                       <div className="flex gap-1.5">
                         <button
-                          className="text-xs bg-slate-900 text-white rounded px-2 py-1"
+                          className="text-xs bg-primary text-white rounded px-2 py-1"
                           onClick={() => saveCategory(tx.id)}
                         >
                           {t.save}
@@ -481,7 +481,7 @@ export default function TransactionsPage() {
                     </button>
                   )}
                 </td>
-                <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                <td className="px-3 py-2 text-slate-700 dark:text-slate-400">
                   {tx.accountMapping.mergedInto
                     ? tx.accountMapping.mergedInto.nickname ?? tx.accountMapping.mergedInto.displayName
                     : tx.accountMapping.nickname ?? tx.accountMapping.displayName}
@@ -498,7 +498,7 @@ export default function TransactionsPage() {
                       />
                       <div className="flex gap-1.5">
                         <button
-                          className="text-xs bg-slate-900 text-white rounded px-2 py-0.5"
+                          className="text-xs bg-primary text-white rounded px-2 py-0.5"
                           onClick={() => saveNote(tx.id)}
                         >
                           {t.save}
@@ -524,7 +524,7 @@ export default function TransactionsPage() {
                     </button>
                   ) : (
                     <button
-                      className="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                      className="text-xs text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       onClick={() => {
                         setEditingNoteId(tx.id);
                         setNoteInput("");
@@ -548,7 +548,7 @@ export default function TransactionsPage() {
                           className={`text-xs rounded-full px-2 py-0.5 self-start ${
                             rowTasks.length > 0
                               ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                              : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                              : "text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                           }`}
                           onClick={() => setExpandedTasksTxId(expandedTasksTxId === tx.id ? null : tx.id)}
                         >
@@ -575,7 +575,7 @@ export default function TransactionsPage() {
                                 onChange={(e) => setNewTaskDue(e.target.value)}
                               />
                               <button
-                                className="text-xs bg-slate-900 text-white rounded px-2 py-1"
+                                className="text-xs bg-primary text-white rounded px-2 py-1"
                                 onClick={() => addTask(tx.id)}
                               >
                                 {t.addTask}
@@ -603,7 +603,7 @@ export default function TransactionsPage() {
               {expandedInfoTxId === tx.id && tx.additionalInfo && (
                 <tr className="bg-slate-50 dark:bg-slate-900/40">
                   <td></td>
-                  <td colSpan={showRunningBalance ? 7 : 6} className="px-3 py-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <td colSpan={showRunningBalance ? 7 : 6} className="px-3 py-1.5 text-xs text-slate-700 dark:text-slate-400">
                     {tx.additionalInfo}
                   </td>
                 </tr>
