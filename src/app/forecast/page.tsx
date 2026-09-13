@@ -17,6 +17,7 @@ interface CardForecast {
   pendingAmount: number;
   previousAmount: number | null;
   pendingCount: number;
+  pendingSinceDate: string | null;
   isEstimate: boolean;
   nextChargeDate: string | null;
   dayOfMonth: number | null;
@@ -229,7 +230,20 @@ export default function ForecastPage() {
                   className={`text-xl font-bold tabular-nums text-start hover:underline ${
                     card.pendingAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
                   }`}
-                  onClick={() => router.push(`/transactions?accountId=${card.id}`)}
+                  onClick={() => {
+                    // Scope the linked-to view to the same cycle window the
+                    // pending amount was actually summed from — otherwise
+                    // Transactions shows this card's full history (which,
+                    // going back months, reads as if all of it were part of
+                    // the pending charge instead of just what's since the
+                    // last billing date).
+                    const qs = new URLSearchParams({ accountId: card.id });
+                    if (card.pendingSinceDate) {
+                      qs.set("from", card.pendingSinceDate);
+                      qs.set("to", new Date().toISOString().slice(0, 10));
+                    }
+                    router.push(`/transactions?${qs.toString()}`);
+                  }}
                   title={t.transactions}
                 >
                   {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}

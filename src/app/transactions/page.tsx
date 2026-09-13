@@ -64,6 +64,18 @@ function TransactionsPageInner() {
 
   const [categoryFilter, setCategoryFilter] = useState("");
   const [accountFilter, setAccountFilter] = useState(() => searchParams.get("accountId") ?? "");
+
+  // A link from the Forecast screen (e.g. "see this card's pending charge")
+  // carries the exact cycle window that amount was summed from — apply it
+  // once on arrival so the list matches what was clicked through from,
+  // instead of falling back to the persisted default range and showing
+  // months of unrelated history as if it were all part of that charge.
+  useEffect(() => {
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    if (from && to) setTransactionsDateRange({ preset: "custom", from, to });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [accountTypeFilter, setAccountTypeFilter] = useState<AccountType>("");
   const [signFilter, setSignFilter] = useState<Sign>("");
   const [hideFuture, setHideFuture] = useState(false);

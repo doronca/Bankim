@@ -25,6 +25,11 @@ export interface CardForecastResult {
   pendingAmount: number;
   previousAmount: number | null;
   pendingCount: number;
+  // The cycle window backing pendingAmount, as local ISO dates — so the UI
+  // can link straight to exactly those transactions instead of the card's
+  // full history (which reads as if unrelated old transactions were part of
+  // the pending total when they're really just older, already-billed spend).
+  pendingSinceDate: string | null;
   isEstimate: boolean;
   nextChargeDate: string | null;
   dayOfMonth: number | null;
@@ -98,6 +103,7 @@ export async function computeCardForecasts(entityId?: string | null): Promise<Ca
         pendingAmount: 0,
         previousAmount: null,
         pendingCount: 0,
+        pendingSinceDate: null,
         isEstimate: false,
         nextChargeDate: null,
         dayOfMonth: null,
@@ -207,6 +213,7 @@ export async function computeCardForecasts(entityId?: string | null): Promise<Ca
       pendingAmount,
       previousAmount,
       pendingCount: pendingTx.length,
+      pendingSinceDate: toLocalDateString(sinceDate),
       isEstimate,
       nextChargeDate,
       dayOfMonth,
