@@ -42,6 +42,15 @@ interface AppState {
   // a user who's past that can turn it off from Preferences to declutter.
   showExplanations: boolean;
   setShowExplanations: (v: boolean) => void;
+  // Dashboard section customization: order of section ids, ids hidden from
+  // view, and ids currently collapsed. Sections not yet present in `order`
+  // (e.g. newly added ones) are appended at render time, not stored here.
+  dashboardSectionOrder: string[];
+  setDashboardSectionOrder: (order: string[]) => void;
+  hiddenDashboardSections: string[];
+  setHiddenDashboardSections: (ids: string[]) => void;
+  collapsedDashboardSections: string[];
+  setCollapsedDashboardSections: (ids: string[]) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -61,6 +70,12 @@ export const useAppStore = create<AppState>()(
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       showExplanations: true,
       setShowExplanations: (showExplanations) => set({ showExplanations }),
+      dashboardSectionOrder: [],
+      setDashboardSectionOrder: (dashboardSectionOrder) => set({ dashboardSectionOrder }),
+      hiddenDashboardSections: [],
+      setHiddenDashboardSections: (hiddenDashboardSections) => set({ hiddenDashboardSections }),
+      collapsedDashboardSections: [],
+      setCollapsedDashboardSections: (collapsedDashboardSections) => set({ collapsedDashboardSections }),
     }),
     { name: "app-store" }
   )
