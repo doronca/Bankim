@@ -179,7 +179,9 @@ export default function ForecastPage() {
               {!card.isImmediateDebit && (
                 <div className="border-t border-slate-100 dark:border-slate-700 pt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-slate-700 dark:text-slate-400">{t.nextChargeDate}</span>
+                    <span className="text-[11px] text-slate-700 dark:text-slate-400">
+                      {card.dayOfMonthIsManual ? t.nextChargeDateManual : t.nextChargeDate}
+                    </span>
                     {card.nextChargeDate ? (
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                         {dateFmt(card.nextChargeDate)}

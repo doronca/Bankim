@@ -2,13 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adjustToNextBusinessDay } from "@/lib/ingest/hebcal";
 
+// Date-only ISO string from LOCAL date components. toISOString() converts to
+// UTC first, which shifts the date backward by a day for any timezone ahead
+// of UTC (e.g. Israel) — this keeps the calendar day the billing logic
+// actually computed.
+function toLocalDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // GET /api/dashboard/forecast?entity=<entityId>
 //
 // For every credit card (optionally scoped to one entity), estimates what's
 // about to be charged and when:
-//  - pendingAmount: real pending charges when OpenFinance reports isInvoiced
-//    (charges posted but not yet billed); otherwise falls back to "since the
-//    last estimated billing date" and is flagged isEstimate: true.
+//  - pendingAmount: sum of transactions since the last billing date (see the
+//    note below on why this doesn't use OpenFinance's `isInvoiced` flag).
+//    isEstimate is true unless the billing day is a manual override — a
+//    heuristic-detected or missing billing day makes the cycle window itself
+//    an approximation.
 //  - nextChargeDate: derived from the same "matching lump-sum debit in the
 //    linked checking account" heuristic used by /account-mappings/billing-estimate.
 export async function GET(req: NextRequest) {
@@ -91,27 +104,29 @@ export async function GET(req: NextRequest) {
       // Israeli banks postpone a charge that falls on Shabbat/a holiday to
       // the nearest following business day, rather than settling on it.
       const settled = await adjustToNextBusinessDay(candidate);
-      nextChargeDate = settled.toISOString().slice(0, 10);
+      nextChargeDate = toLocalDateString(settled);
     }
 
-    const invoicedKnown = card.transactions.some((tx) => tx.isInvoiced !== null);
+    // OpenFinance's `isInvoiced` flag has been observed marking transactions
+    // as already-billed prematurely, within the still-open current cycle —
+    // filtering on it undercounts (or otherwise misrepresents) what's really
+    // pending by a wide margin compared to the issuer's own statement. The
+    // "since the last billing date" window, computed from the billing day we
+    // already know, tracks the issuer's real pending total far more closely,
+    // so it's used unconditionally rather than only as a fallback.
     let pendingTx = card.transactions;
-    let isEstimate = false;
-    if (invoicedKnown) {
-      pendingTx = card.transactions.filter((tx) => tx.isInvoiced === false);
+    let isEstimate = !dayOfMonthIsManual;
+    let sinceDate: Date;
+    if (dayOfMonth) {
+      // A transaction dated on the billing day itself belongs to the
+      // statement that just closed, not the newly-opened cycle — so the new
+      // cycle starts the day after.
+      sinceDate = new Date(now.getFullYear(), now.getMonth(), dayOfMonth + 1);
+      if (sinceDate.getTime() > now.getTime()) sinceDate.setMonth(sinceDate.getMonth() - 1);
     } else {
-      isEstimate = true;
-      // Fall back to "since the last billing date" (or the last 30 days if
-      // no billing date could be estimated) as a rough stand-in.
-      let sinceDate: Date;
-      if (dayOfMonth) {
-        sinceDate = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);
-        if (sinceDate.getTime() > now.getTime()) sinceDate.setMonth(sinceDate.getMonth() - 1);
-      } else {
-        sinceDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-      pendingTx = card.transactions.filter((tx) => tx.date.getTime() >= sinceDate.getTime());
+      sinceDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
+    pendingTx = card.transactions.filter((tx) => tx.date.getTime() >= sinceDate.getTime());
 
     const pendingAmount = pendingTx.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
     const futureTransactionsCount = card.transactions.filter((tx) => tx.date.getTime() > now.getTime()).length;
@@ -127,7 +142,7 @@ export async function GET(req: NextRequest) {
     // — only computable once we know the billing day.
     let previousAmount: number | null = null;
     if (dayOfMonth) {
-      const cycleStart = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);
+      const cycleStart = new Date(now.getFullYear(), now.getMonth(), dayOfMonth + 1);
       if (cycleStart.getTime() > now.getTime()) cycleStart.setMonth(cycleStart.getMonth() - 1);
       const prevCycleStart = new Date(cycleStart);
       prevCycleStart.setMonth(prevCycleStart.getMonth() - 1);

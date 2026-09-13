@@ -181,11 +181,16 @@ export async function syncAccountMappings() {
 
   for (const acc of data.items) {
     const providerName = acc.providerId ? providerNames.get(acc.providerId) ?? acc.providerId : null;
+    // "XXX" is the ISO-4217 code for "no currency" — the OpenFinance
+    // sandbox returns it for some accounts instead of the real currency.
+    // Falling back to ILS keeps amounts/labels sane rather than showing the
+    // placeholder code to the user.
+    const currency = acc.currency && acc.currency !== "XXX" ? acc.currency : "ILS";
     await prisma.accountMapping.upsert({
       where: { source_externalId: { source: "openfinance", externalId: acc.id } },
       update: {
         displayName: acc.accountName ?? acc.accountNumber ?? acc.id,
-        currency: acc.currency,
+        currency,
         accountNumber: acc.accountNumber ?? null,
         providerId: acc.providerId ?? null,
         providerName,
@@ -195,7 +200,7 @@ export async function syncAccountMappings() {
         externalId: acc.id,
         displayName: acc.accountName ?? acc.accountNumber ?? acc.id,
         accountType: accountTypeToMappingType(acc.accountType),
-        currency: acc.currency,
+        currency,
         accountNumber: acc.accountNumber ?? null,
         providerId: acc.providerId ?? null,
         providerName,
@@ -269,6 +274,7 @@ export async function syncTransactions() {
           where: { accountMappingId_sourceRef: { accountMappingId: mapping.id, sourceRef } },
           update: {
             amount: amountValue,
+            currency: amountInfo.currency,
             description,
             additionalInfo,
             date: date ? new Date(date) : new Date(),
