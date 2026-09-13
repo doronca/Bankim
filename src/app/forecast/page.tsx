@@ -177,14 +177,26 @@ export default function ForecastPage() {
               </div>
 
               {!card.isImmediateDebit && (
-                <div className="border-t border-slate-100 dark:border-slate-700 pt-2 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-700 dark:text-slate-400">{t.nextChargeDate}</span>
-                  {card.nextChargeDate ? (
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                      {dateFmt(card.nextChargeDate)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-600 dark:text-slate-500">{t.nextChargeUnknown}</span>
+                <div className="border-t border-slate-100 dark:border-slate-700 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-700 dark:text-slate-400">{t.nextChargeDate}</span>
+                    {card.nextChargeDate ? (
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {dateFmt(card.nextChargeDate)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-600 dark:text-slate-500">{t.nextChargeUnknown}</span>
+                    )}
+                  </div>
+                  {card.dayOfMonth != null && (
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-[11px] text-slate-600 dark:text-slate-500">
+                        {card.dayOfMonthIsManual ? t.billingDayManual : t.billingDayEstimate}
+                      </span>
+                      <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                        {card.dayOfMonth}
+                      </span>
+                    </div>
                   )}
                 </div>
               )}

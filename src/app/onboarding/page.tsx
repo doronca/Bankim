@@ -763,10 +763,16 @@ function AccountRow({
         <div className="text-xs text-slate-700 dark:text-slate-400 mt-0.5">
           {[m.providerName, m.accountNumber, m.accountType, m.currency].filter(Boolean).join(" · ")}
         </div>
-        {m.accountType === "credit_card" && billingEstimate && (
-          <div className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">
-            {t.billingDayEstimate}: ~{billingEstimate.dayOfMonth}
-          </div>
+        {m.accountType === "credit_card" && (
+          m.billingDayOverride ? (
+            <div className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+              {t.billingDayManual}: {m.billingDayOverride}
+            </div>
+          ) : billingEstimate ? (
+            <div className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">
+              {t.billingDayEstimate}: ~{billingEstimate.dayOfMonth}
+            </div>
+          ) : null
         )}
         {m.mergedInto ? (
           <div className="text-xs text-link dark:text-blue-400 mt-1 flex items-center gap-1.5">

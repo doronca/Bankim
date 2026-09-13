@@ -50,6 +50,7 @@ interface CardForecast {
   nickname: string | null;
   accountNumber: string | null;
   dayOfMonth: number | null;
+  dayOfMonthIsManual?: boolean;
   isImmediateDebit?: boolean;
   maxChargeAmount?: number | null;
   chargeAmount?: number;
@@ -196,6 +197,12 @@ export default function DashboardPage() {
                     {card.nextChargeDate ? dateFmt(card.nextChargeDate) : "—"}
                   </span>
                 </div>
+                {!card.isImmediateDebit && card.dayOfMonth != null && (
+                  <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-500">
+                    {(locale === "he" ? "יום חיוב" : "Billing day")}: {card.dayOfMonth}
+                    {card.dayOfMonthIsManual ? "" : ` (${locale === "he" ? "משוער" : "est."})`}
+                  </div>
+                )}
               </div>
             );
           })}
