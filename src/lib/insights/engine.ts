@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import type { Locale } from "@/lib/i18n";
+import { formatInsight } from "@/lib/insights/format";
 import {
   addDays,
   differenceInCalendarDays,
@@ -197,7 +199,13 @@ function ruleDuplicateSubscriptions(transactions: Tx[], now: Date): InsightDraft
         message: `נמצאו ${matches.length} מנויים פעילים בקטגוריית ${group.label}: ${matches.map((m) => m.merchant).join(", ")}. איחוד וביטול הכפולים יכול לחסוך כ-${Math.round(annualSavings).toLocaleString()} ש"ח בשנה.`,
         actionText: `שקול/י לבטל: ${redundant.map((m) => m.merchant).join(", ")} ולהשאיר את ${keepCheapest.merchant}.`,
         amount: annualSavings,
-        metadata: { category: group.label, merchants: matches.map((m) => m.merchant) },
+        metadata: {
+          category: group.label,
+          merchants: matches.map((m) => m.merchant),
+          annualSavings,
+          cheapestMerchant: keepCheapest.merchant,
+          redundantMerchants: redundant.map((m) => m.merchant),
+        },
       });
     }
   }
@@ -218,7 +226,7 @@ function ruleDuplicateSubscriptions(transactions: Tx[], now: Date): InsightDraft
         title: `מנוי שהתייקר משמעותית: ${m.merchant}`,
         message: `המחיר עלה ${(totalGrowth * 100).toFixed(0)}% מאז החיוב הראשון שנרשם (${m.firstAmount.toFixed(0)} ← ${m.lastAmount.toFixed(0)} ש"ח). כדאי לבדוק אם עדיין משתמשים בשירות; ביטול יחסוך כ-${Math.round(annualSavings).toLocaleString()} ש"ח בשנה.`,
         amount: annualSavings,
-        metadata: { merchant: m.merchant, firstAmount: m.firstAmount, lastAmount: m.lastAmount },
+        metadata: { merchant: m.merchant, firstAmount: m.firstAmount, lastAmount: m.lastAmount, annualSavings },
       });
     }
   }
@@ -261,6 +269,9 @@ function ruleWeeklyFreeCash(transactions: Tx[], now: Date): InsightDraft[] {
   const severity: InsightDraft["severity"] = freeRemaining < 0 ? "critical" : overPace > avgWeeklyDiscretionary * 0.15 ? "warning" : "info";
 
   let recommendation = "";
+  let topCategoryLabel: string | undefined;
+  let topCategoryAmount: number | undefined;
+  let dailyCutSuggestion: number | undefined;
   if (overPace > avgWeeklyDiscretionary * 0.1) {
     const byCategory = new Map<string, number>();
     for (const t of thisWeekTx) {
@@ -271,8 +282,10 @@ function ruleWeeklyFreeCash(transactions: Tx[], now: Date): InsightDraft[] {
     const topCategory = [...byCategory.entries()].sort((a, b) => b[1] - a[1])[0];
     const daysLeft = Math.max(1, 7 - dayOfWeek);
     if (topCategory) {
-      const dailyCutSuggestion = Math.max(0, overPace) / daysLeft;
-      recommendation = ` הקטגוריה המובילה השבוע היא "${topCategory[0]}" (${Math.round(topCategory[1])} ש"ח) — כדאי לצמצם בה כ-${Math.round(dailyCutSuggestion)} ש"ח ליום עד סוף השבוע כדי לחזור לקצב.`;
+      topCategoryLabel = topCategory[0];
+      topCategoryAmount = topCategory[1];
+      dailyCutSuggestion = Math.max(0, overPace) / daysLeft;
+      recommendation = ` הקטגוריה המובילה השבוע היא "${topCategoryLabel}" (${Math.round(topCategoryAmount)} ש"ח) — כדאי לצמצם בה כ-${Math.round(dailyCutSuggestion)} ש"ח ליום עד סוף השבוע כדי לחזור לקצב.`;
     }
   }
 
@@ -293,6 +306,9 @@ function ruleWeeklyFreeCash(transactions: Tx[], now: Date): InsightDraft[] {
       avgWeeklyDiscretionary,
       spentThisWeek,
       overPace,
+      topCategory: topCategoryLabel,
+      topCategoryAmount,
+      dailyCutSuggestion,
     },
   });
   return drafts;
@@ -346,10 +362,12 @@ async function ruleCashflowForecast(entityId: string | null, now: Date): Promise
         amount: firstNegativeWeek.balance,
         metadata: {
           accountId: account.id,
+          accountName: account.nickname ?? account.displayName,
           currentBalanceEstimate: currentBalance,
           avgWeeklyIncome,
           avgWeeklyExpense,
           projectedNegativeWeek: firstNegativeWeek.weekStart.toISOString(),
+          projectedBalance: firstNegativeWeek.balance,
         },
       });
     }
@@ -401,7 +419,7 @@ async function ruleCashOptimization(entities: { id: string; name: string }[], no
           `עם תנועה מועטה יחסית ב-3 החודשים האחרונים (כ-${Math.round(movement3mo).toLocaleString()} ש"ח). ` +
           `שקול/י להעביר חלק מהסכום לתיק ההשקעות (IBKR) או לפיקדון/קרן כספית מניבה, ולהשאיר כרית נזילות סבירה בעו"ש.`,
         amount: totalBalance,
-        metadata: { entityId: entity.id, balance: totalBalance, movement3mo },
+        metadata: { entityId: entity.id, entityName: entity.name, balance: totalBalance, movement3mo },
       });
     }
   }
@@ -429,7 +447,13 @@ async function ruleCashOptimization(entities: { id: string; name: string }[], no
             `בעוד שבחשבון הפרטי יש עודף מעל לכרית הביטחון (${PERSONAL_BUFFER.toLocaleString()} ש"ח). ` +
             `הזרמת בעלים מוצעת בסך כ-${Math.round(suggestedTransfer).toLocaleString()} ש"ח יכולה למנוע ריבית/עמלות גישור על החשבון העסקי.`,
           amount: suggestedTransfer,
-          metadata: { businessEntityId: business.entityId, personalEntityId: personal.entityId, suggestedTransfer },
+          metadata: {
+            businessEntityId: business.entityId,
+            personalEntityId: personal.entityId,
+            suggestedTransfer,
+            businessBalance: business.balance,
+            personalBuffer: PERSONAL_BUFFER,
+          },
         });
       }
     }
@@ -517,7 +541,7 @@ export interface WeeklyDigestData {
 // Builds the data behind the weekly plain-text digest (see
 // GET /api/insights/digest). Kept separate from the text formatting so the
 // UI could, in principle, render it as a card instead of copy-pasted text.
-export async function buildWeeklyDigest(entityId: string, now = new Date()): Promise<WeeklyDigestData> {
+export async function buildWeeklyDigest(entityId: string, now = new Date(), locale: Locale = "he"): Promise<WeeklyDigestData> {
   const entity = await prisma.entity.findUniqueOrThrow({ where: { id: entityId } });
   const weekStart = startOfWeek(now, { weekStartsOn: 0 });
 
@@ -545,15 +569,50 @@ export async function buildWeeklyDigest(entityId: string, now = new Date()): Pro
     orderBy: [{ severity: "desc" }, { computedAt: "desc" }],
   });
 
+  const highlight = topInsight
+    ? formatInsight(
+        {
+          ruleKey: topInsight.ruleKey,
+          type: topInsight.type,
+          title: topInsight.title,
+          message: topInsight.message,
+          actionText: topInsight.actionText,
+          metadata: topInsight.metadata ? JSON.parse(topInsight.metadata) : null,
+        },
+        locale
+      ).message
+    : null;
+
   return {
     entityName: entity.name,
     balances,
     topExpenses,
-    highlight: topInsight?.message ?? null,
+    highlight,
   };
 }
 
-export function formatWeeklyDigestText(data: WeeklyDigestData, now = new Date()): string {
+export function formatWeeklyDigestText(data: WeeklyDigestData, now = new Date(), locale: Locale = "he"): string {
+  if (locale === "en") {
+    const dateLabel = now.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    const lines: string[] = [];
+    lines.push(`Weekly summary — ${data.entityName} (${dateLabel})`);
+    lines.push("");
+    if (data.balances.length) {
+      lines.push("Account balances:");
+      for (const b of data.balances) lines.push(`• ${b.label}: ${Math.round(b.amount).toLocaleString()} ${b.currency}`);
+      lines.push("");
+    }
+    if (data.topExpenses.length) {
+      lines.push("Top 3 expenses this week:");
+      for (const e of data.topExpenses) lines.push(`• ${e.description} — ₪${Math.round(e.amount).toLocaleString()}${e.category ? ` (${e.category})` : ""}`);
+      lines.push("");
+    }
+    if (data.highlight) {
+      lines.push(`💡 ${data.highlight}`);
+    }
+    return lines.join("\n");
+  }
+
   const dateLabel = now.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
   const lines: string[] = [];
   lines.push(`סיכום שבועי — ${data.entityName} (${dateLabel})`);

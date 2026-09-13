@@ -34,8 +34,9 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
 
   function load() {
     setLoading(true);
-    const qs = entity !== AGGREGATE ? `?entity=${entity}` : "";
-    fetch(`/api/insights${qs}`)
+    const params = new URLSearchParams({ locale });
+    if (entity !== AGGREGATE) params.set("entity", entity);
+    fetch(`/api/insights?${params.toString()}`)
       .then((r) => r.json())
       .then(setInsights)
       .finally(() => setLoading(false));
@@ -45,7 +46,7 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
     load();
     setDigestText(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entity]);
+  }, [entity, locale]);
 
   async function refresh() {
     setRefreshing(true);
@@ -76,7 +77,7 @@ export default function InsightsPanel({ entity, locale }: { entity: EntityKey; l
     if (entity === AGGREGATE) return;
     setDigestLoading(true);
     try {
-      const res = await fetch(`/api/insights/digest?entity=${entity}`);
+      const res = await fetch(`/api/insights/digest?entity=${entity}&locale=${locale}`);
       const data = await res.json();
       setDigestText(data.text ?? null);
     } finally {
