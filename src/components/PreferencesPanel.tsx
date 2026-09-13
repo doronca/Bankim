@@ -7,7 +7,7 @@ const THEME_OPTIONS: Theme[] = ["light", "dark", "system"];
 const FONT_OPTIONS: FontSize[] = ["sm", "md", "lg", "xl"];
 
 export default function PreferencesPanel({ locale }: { locale: "he" | "en" }) {
-  const { theme, setTheme, fontSize, setFontSize } = useAppStore();
+  const { theme, setTheme, fontSize, setFontSize, showExplanations, setShowExplanations } = useAppStore();
   const t = dict[locale];
 
   const themeLabels: Record<Theme, string> = {
@@ -63,6 +63,15 @@ export default function PreferencesPanel({ locale }: { locale: "he" | "en" }) {
           ))}
         </div>
       </div>
+
+      <label className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showExplanations}
+          onChange={(e) => setShowExplanations(e.target.checked)}
+        />
+        {t.showExplanationsLabel}
+      </label>
     </div>
   );
 }

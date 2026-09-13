@@ -12,7 +12,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { entity, setEntity, locale, theme, fontSize, sidebarCollapsed, setSidebarCollapsed } = useAppStore();
+  const { entity, setEntity, locale, theme, fontSize, sidebarCollapsed, setSidebarCollapsed, showExplanations } = useAppStore();
   const pathname = usePathname();
   const t = dict[locale];
   const mainRef = useRef<HTMLElement>(null);
@@ -147,12 +147,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         {!showEntitySwitcher && !sidebarCollapsed && (
-          <button
-            className="text-xs text-start text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 underline"
-            onClick={() => setManagerOpen(true)}
-          >
-            {t.manageEntities}
-          </button>
+          <div className="flex flex-col gap-1.5">
+            {entities.length === 1 && showExplanations && (
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-md p-2 leading-snug">
+                {t.singleEntityHint}
+              </div>
+            )}
+            <button
+              className="text-xs text-start text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 underline"
+              onClick={() => setManagerOpen(true)}
+            >
+              {t.manageEntities}
+            </button>
+          </div>
         )}
 
         <nav className="flex flex-col gap-1">

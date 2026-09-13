@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { dict } from "@/lib/i18n";
 import type { EntityRow } from "@/lib/useEntities";
+import InfoTooltip from "@/components/InfoTooltip";
 
 export default function EntityManagerModal({
   entities,
@@ -60,7 +61,10 @@ export default function EntityManagerModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t.manageEntities}</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+            {t.manageEntities}
+            <InfoTooltip text={t.tooltipEntityList} />
+          </h2>
           <button
             className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             onClick={onClose}
@@ -128,6 +132,7 @@ export default function EntityManagerModal({
             value={newIcon}
             onChange={(e) => setNewIcon(e.target.value)}
             placeholder="🏷️"
+            title={t.tooltipEntityIcon}
           />
           <input
             className="flex-1 border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded px-2 py-1.5 text-sm"

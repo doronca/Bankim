@@ -37,6 +37,11 @@ interface AppState {
   setFontSize: (s: FontSize) => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (v: boolean) => void;
+  // Global toggle for the "?" explanation tooltips and inline hints sprinkled
+  // across the app. On by default so the app is learnable by exploring it;
+  // a user who's past that can turn it off from Preferences to declutter.
+  showExplanations: boolean;
+  setShowExplanations: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -54,6 +59,8 @@ export const useAppStore = create<AppState>()(
       setFontSize: (fontSize) => set({ fontSize }),
       sidebarCollapsed: false,
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+      showExplanations: true,
+      setShowExplanations: (showExplanations) => set({ showExplanations }),
     }),
     { name: "app-store" }
   )

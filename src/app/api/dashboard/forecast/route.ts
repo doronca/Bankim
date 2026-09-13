@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { adjustToNextBusinessDay } from "@/lib/ingest/hebcal";
 
 // GET /api/dashboard/forecast?entity=<entityId>
 //
@@ -25,7 +26,35 @@ export async function GET(req: NextRequest) {
   ]);
 
   const now = new Date();
-  const result = cards.map((card) => {
+  const result = await Promise.all(cards.map(async (card) => {
+    // Debit cards settle immediately against the bank account, so they have
+    // no monthly billing cycle to detect or require.
+    if (card.isImmediateDebit) {
+      const futureTransactionsCount = card.transactions.filter((tx) => tx.date.getTime() > now.getTime()).length;
+      return {
+        id: card.id,
+        name: card.nickname ?? card.displayName,
+        nickname: card.nickname,
+        accountNumber: card.accountNumber,
+        entityId: card.entityId,
+        entityName: card.entity?.name ?? null,
+        currency: card.currency,
+        pendingAmount: 0,
+        previousAmount: null,
+        pendingCount: 0,
+        isEstimate: false,
+        nextChargeDate: null,
+        dayOfMonth: null,
+        dayOfMonthIsManual: false,
+        isImmediateDebit: true,
+        billingDayRequired: false,
+        maxChargeAmount: null,
+        chargeAmount: 0,
+        rolloverAmount: 0,
+        futureTransactionsCount,
+      };
+    }
+
     const last4 = card.accountNumber?.replace(/[^0-9]/g, "").slice(-4);
     const nameNeedle = card.displayName?.trim();
 
@@ -59,7 +88,10 @@ export async function GET(req: NextRequest) {
     if (dayOfMonth) {
       const candidate = new Date(now.getFullYear(), now.getMonth(), dayOfMonth);
       if (candidate.getTime() < now.getTime()) candidate.setMonth(candidate.getMonth() + 1);
-      nextChargeDate = candidate.toISOString().slice(0, 10);
+      // Israeli banks postpone a charge that falls on Shabbat/a holiday to
+      // the nearest following business day, rather than settling on it.
+      const settled = await adjustToNextBusinessDay(candidate);
+      nextChargeDate = settled.toISOString().slice(0, 10);
     }
 
     const invoicedKnown = card.transactions.some((tx) => tx.isInvoiced !== null);
@@ -83,6 +115,13 @@ export async function GET(req: NextRequest) {
 
     const pendingAmount = pendingTx.reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
     const futureTransactionsCount = card.transactions.filter((tx) => tx.date.getTime() > now.getTime()).length;
+
+    // Revolving-credit cards ("אשראי מתגלגל"): the bank never charges more
+    // than maxChargeAmount on the billing day — the rest carries into next
+    // cycle's charge as an interest-bearing balance rather than settling now.
+    const hasCap = card.maxChargeAmount != null && card.maxChargeAmount > 0;
+    const chargeAmount = hasCap ? Math.min(pendingAmount, card.maxChargeAmount!) : pendingAmount;
+    const rolloverAmount = hasCap ? Math.max(0, pendingAmount - card.maxChargeAmount!) : 0;
 
     // The prior cycle's total, for a "compared to last time" reference point
     // — only computable once we know the billing day.
@@ -112,9 +151,16 @@ export async function GET(req: NextRequest) {
       nextChargeDate,
       dayOfMonth,
       dayOfMonthIsManual,
+      isImmediateDebit: false,
+      maxChargeAmount: card.maxChargeAmount,
+      chargeAmount,
+      rolloverAmount,
+      // Without a known billing day, future card charges can't be placed on
+      // a bank-account timeline — the UI should prompt the user to set one.
+      billingDayRequired: !dayOfMonth,
       futureTransactionsCount,
     };
-  });
+  }));
 
   const totals = {
     pendingAmount: result.reduce((sum, c) => sum + c.pendingAmount, 0),

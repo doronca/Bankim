@@ -5,6 +5,9 @@ import { useAppStore } from "@/lib/store";
 import { dict } from "@/lib/i18n";
 import { useEntities } from "@/lib/useEntities";
 import CategoryManagerModal from "@/components/CategoryManagerModal";
+import AccountSettingsPanel from "@/components/AccountSettingsPanel";
+import InfoTooltip from "@/components/InfoTooltip";
+import SetupGuideModal from "@/components/SetupGuideModal";
 
 type BillingEstimates = Record<string, { dayOfMonth: number; sampleCount: number } | null>;
 
@@ -21,6 +24,9 @@ interface Mapping {
   entity: { id: string; name: string; icon: string | null } | null;
   mergedIntoId: string | null;
   mergedInto: { id: string; displayName: string; nickname: string | null } | null;
+  billingDayOverride?: number | null;
+  isImmediateDebit?: boolean;
+  maxChargeAmount?: number | null;
 }
 
 interface Provider {
@@ -49,12 +55,17 @@ export default function OnboardingPage() {
   const [connecting, setConnecting] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [billingEstimates, setBillingEstimates] = useState<BillingEstimates>({});
+  const [pendingAmounts, setPendingAmounts] = useState<Record<string, number>>({});
+  const [hideZeroCharge, setHideZeroCharge] = useState(false);
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  type QuickFilter = "all" | "mapped" | "unmapped" | "merged" | "roots";
+  type QuickFilter = "all" | "mapped" | "unmapped" | "merged" | "roots" | "credit_card";
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [entityFilter, setEntityFilter] = useState(""); // "" = all, "none" = unassigned, else entity id
+  const [syncError, setSyncError] = useState<{ source: "openfinance" | "ibkr"; message: string } | null>(null);
+  const [uploadError, setUploadError] = useState(false);
+  const [guideSection, setGuideSection] = useState<"general" | "openfinance" | "ibkr" | "fair" | null>(null);
 
   async function load() {
     setLoading(true);
@@ -64,6 +75,11 @@ export default function OnboardingPage() {
     fetch("/api/account-mappings/billing-estimate")
       .then((r) => r.json())
       .then(setBillingEstimates);
+    fetch("/api/dashboard/forecast")
+      .then((r) => r.json())
+      .then((data: { cards: { id: string; pendingAmount: number }[] }) => {
+        setPendingAmounts(Object.fromEntries(data.cards.map((c) => [c.id, c.pendingAmount])));
+      });
   }
 
   useEffect(() => {
@@ -162,13 +178,14 @@ export default function OnboardingPage() {
 
   async function runSync(source: "openfinance" | "ibkr") {
     setSyncing(source);
+    setSyncError(null);
     try {
       const res = await fetch(`/api/sync/${source}`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       await load();
     } catch (err) {
-      alert((err as Error).message);
+      setSyncError({ source, message: (err as Error).message });
     } finally {
       setSyncing(null);
     }
@@ -177,10 +194,12 @@ export default function OnboardingPage() {
   async function uploadFair(file: File) {
     const formData = new FormData();
     formData.append("file", file);
+    setUploadError(false);
     const res = await fetch("/api/upload/fair", { method: "POST", body: formData });
     const data = await res.json();
     if (!res.ok) {
       setUploadMsg(`Error: ${data.error}`);
+      setUploadError(true);
     } else {
       setUploadMsg(`Imported ${data.imported} rows`);
       load();
@@ -213,17 +232,22 @@ export default function OnboardingPage() {
         return Boolean(m.mergedIntoId);
       case "roots":
         return parentIds.has(m.id);
+      case "credit_card":
+        return m.accountType === "credit_card";
       default:
         return true;
     }
   };
-  const passesFilters = (m: Mapping) => matchesEntityFilter(m) && matchesQuickFilter(m) && matchesQuery(m);
+  const matchesZeroChargeFilter = (m: Mapping) =>
+    !hideZeroCharge || m.accountType !== "credit_card" || pendingAmounts[m.id] !== 0;
+  const passesFilters = (m: Mapping) =>
+    matchesEntityFilter(m) && matchesQuickFilter(m) && matchesQuery(m) && matchesZeroChargeFilter(m);
 
   // The "merged" and "roots" quick filters are explicitly asking to see just
   // that slice, flat — not nested under an unrelated tree. Everything else
   // (the default "all" and "mapped") keeps the entity → root → merged-children
   // tree, since that's the structure that actually needs untangling.
-  const useFlatList = quickFilter === "merged" || quickFilter === "roots";
+  const useFlatList = quickFilter === "merged" || quickFilter === "roots" || quickFilter === "credit_card";
 
   const filteredUnmapped = unmapped.filter(passesFilters);
   const flatFiltered = useFlatList ? mappings.filter(passesFilters) : [];
@@ -236,8 +260,13 @@ export default function OnboardingPage() {
   const visibleRoots = useFlatList
     ? []
     : mapped.filter((m) => !m.mergedIntoId && (passesFilters(m) || parentIdsToKeep.has(m.id)));
-  const childrenOf = (parentId: string) =>
-    mapped.filter((m) => m.mergedIntoId === parentId && (passesFilters(m) || parentIdsToKeep.has(parentId)));
+  // Only show every child unconditionally when the root itself genuinely
+  // matches the filters. When the root was pulled in merely as context for a
+  // matching child (parentIdsToKeep), show just the child(ren) that actually
+  // match — otherwise unrelated siblings (e.g. from a different entity) leak
+  // into the list alongside the one that matched.
+  const childrenOf = (parentId: string, parentMatches: boolean) =>
+    mapped.filter((m) => m.mergedIntoId === parentId && (parentMatches || passesFilters(m)));
 
   const entityGroups = new Map<string, { entity: Mapping["entity"]; roots: Mapping[] }>();
   for (const root of visibleRoots) {
@@ -252,11 +281,20 @@ export default function OnboardingPage() {
     { key: "unmapped", label: t.filterKindUnmapped },
     { key: "merged", label: t.filterKindMerged },
     { key: "roots", label: t.filterKindRoots },
+    { key: "credit_card", label: t.filterKindCreditCard },
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.onboarding}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.onboarding}</h1>
+        <button
+          className="text-xs text-blue-600 dark:text-blue-400 underline"
+          onClick={() => setGuideSection("general")}
+        >
+          {t.setupGuide}
+        </button>
+      </div>
 
       <section className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-3">
         <h2 className="text-sm font-medium text-slate-600 dark:text-slate-300">
@@ -348,11 +386,37 @@ export default function OnboardingPage() {
           />
           <span className="text-xs text-slate-500 dark:text-slate-400">{t.uploadFair}</span>
         </div>
-        {uploadMsg && <div className="text-xs text-slate-500 dark:text-slate-400 w-full">{uploadMsg}</div>}
+        {syncError && (
+          <div className="text-xs text-red-600 dark:text-red-400 w-full flex items-center gap-2 flex-wrap">
+            <span>{syncError.message}</span>
+            <button
+              className="text-blue-600 dark:text-blue-400 underline shrink-0"
+              onClick={() => setGuideSection(syncError.source)}
+            >
+              {t.setupGuideOpenButton}
+            </button>
+          </div>
+        )}
+        {uploadMsg && (
+          <div className="text-xs text-slate-500 dark:text-slate-400 w-full flex items-center gap-2 flex-wrap">
+            <span>{uploadMsg}</span>
+            {uploadError && (
+              <button
+                className="text-blue-600 dark:text-blue-400 underline shrink-0"
+                onClick={() => setGuideSection("fair")}
+              >
+                {t.setupGuideOpenButton}
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-medium text-slate-600 dark:text-slate-300 w-full">{t.categories}</h2>
+        <h2 className="text-sm font-medium text-slate-600 dark:text-slate-300 w-full flex items-center gap-1">
+          {t.categories}
+          <InfoTooltip text={t.tooltipCategories} />
+        </h2>
         <button
           className="rounded-md bg-slate-100 dark:bg-slate-700 dark:text-slate-100 text-sm px-3 py-1.5"
           onClick={() => applyPreset("household")}
@@ -365,6 +429,7 @@ export default function OnboardingPage() {
         >
           {t.businessPreset}
         </button>
+        <InfoTooltip text={t.tooltipCategoryPresets} />
         <button
           className="rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm px-3 py-1.5"
           onClick={() => setCategoryManagerOpen(true)}
@@ -427,6 +492,14 @@ export default function OnboardingPage() {
                 </option>
               ))}
             </select>
+            <label className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={hideZeroCharge}
+                onChange={(e) => setHideZeroCharge(e.target.checked)}
+              />
+              {t.hideZeroChargeCards}
+            </label>
           </div>
         </div>
       )}
@@ -451,6 +524,7 @@ export default function OnboardingPage() {
                 t={t}
                 allAccounts={mappings}
                 onMerge={setMerge}
+                onSaved={load}
               />
             ))}
           </div>
@@ -476,6 +550,7 @@ export default function OnboardingPage() {
                 t={t}
                 allAccounts={mappings}
                 onMerge={setMerge}
+                onSaved={load}
               />
             ))}
           </div>
@@ -495,7 +570,7 @@ export default function OnboardingPage() {
               </summary>
               <div className="flex flex-col gap-2 mt-3 ps-2 border-s-2 border-slate-200 dark:border-slate-700">
                 {group.roots.map((root) => {
-                  const children = childrenOf(root.id);
+                  const children = childrenOf(root.id, passesFilters(root));
                   return (
                     <details key={root.id} open={children.length > 0} className="flex flex-col gap-2">
                       <summary className="cursor-pointer list-none flex items-center gap-1.5 -ms-2">
@@ -514,6 +589,7 @@ export default function OnboardingPage() {
                             t={t}
                             allAccounts={mappings}
                             onMerge={setMerge}
+                            onSaved={load}
                           />
                         </div>
                         {children.length > 0 && (
@@ -537,6 +613,7 @@ export default function OnboardingPage() {
                               t={t}
                               allAccounts={mappings}
                               onMerge={setMerge}
+                              onSaved={load}
                             />
                           ))}
                         </div>
@@ -559,6 +636,10 @@ export default function OnboardingPage() {
       {categoryManagerOpen && (
         <CategoryManagerModal locale={locale} onClose={() => setCategoryManagerOpen(false)} />
       )}
+
+      {guideSection && (
+        <SetupGuideModal locale={locale} initialSection={guideSection} onClose={() => setGuideSection(null)} />
+      )}
     </div>
   );
 }
@@ -575,6 +656,7 @@ function AccountRow({
   t,
   allAccounts,
   onMerge,
+  onSaved,
 }: {
   m: Mapping;
   locale: "he" | "en";
@@ -587,6 +669,7 @@ function AccountRow({
   t: (typeof dict)["en"] | (typeof dict)["he"];
   allAccounts: Mapping[];
   onMerge: (id: string, mergedIntoId: string | null) => void;
+  onSaved: () => void;
 }) {
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(m.nickname ?? "");
@@ -629,6 +712,7 @@ function AccountRow({
             >
               {locale === "he" ? "כינוי" : "nickname"}
             </button>
+            <InfoTooltip text={t.tooltipNickname} />
           </div>
         )}
         {m.nickname && <div className="text-xs text-slate-400 dark:text-slate-500 break-words">{m.displayName}</div>}
@@ -646,45 +730,52 @@ function AccountRow({
             <button className="underline" onClick={() => onMerge(m.id, null)}>
               {t.unmerge}
             </button>
+            <InfoTooltip text={t.tooltipMerge} />
           </div>
         ) : (
           mergeCandidates.length > 0 && (
-            <select
-              className="text-xs border border-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 rounded px-1.5 py-0.5 mt-1"
-              defaultValue=""
-              onChange={(e) => e.target.value && onMerge(m.id, e.target.value)}
-            >
-              <option value="" disabled>
-                {t.mergeAccount}
-              </option>
-              {mergeCandidates.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nickname ?? a.displayName}
+            <div className="flex items-center gap-1 mt-1">
+              <select
+                className="text-xs border border-slate-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 rounded px-1.5 py-0.5"
+                defaultValue=""
+                onChange={(e) => e.target.value && onMerge(m.id, e.target.value)}
+              >
+                <option value="" disabled>
+                  {t.mergeAccount}
                 </option>
-              ))}
-            </select>
+                {mergeCandidates.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nickname ?? a.displayName}
+                  </option>
+                ))}
+              </select>
+              <InfoTooltip text={t.tooltipMerge} />
+            </div>
           )
         )}
       </div>
-      {!m.mergedInto && (
-        <select
-          className="border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md text-sm px-2 py-1 shrink-0"
-          value={m.entityId ?? ""}
-          onChange={(e) => e.target.value && onAssign(m.id, e.target.value)}
-        >
-          {placeholderEntity && (
-            <option value="" disabled>
-              {placeholderEntity}
-            </option>
-          )}
-          {entities.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.icon ? `${e.icon} ` : ""}
-              {e.name}
-            </option>
-          ))}
-        </select>
-      )}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {!m.mergedInto && (
+          <select
+            className="border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-md text-sm px-2 py-1 shrink-0"
+            value={m.entityId ?? ""}
+            onChange={(e) => e.target.value && onAssign(m.id, e.target.value)}
+          >
+            {placeholderEntity && (
+              <option value="" disabled>
+                {placeholderEntity}
+              </option>
+            )}
+            {entities.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.icon ? `${e.icon} ` : ""}
+                {e.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <AccountSettingsPanel m={m} entities={entities} allAccounts={allAccounts} locale={locale} onSaved={onSaved} />
+      </div>
     </div>
   );
 }

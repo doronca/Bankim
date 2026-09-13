@@ -4,21 +4,31 @@ import { useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { dict } from "@/lib/i18n";
 
+// The most common Israeli credit-card billing days, offered first so the
+// user can pick with one click instead of typing — the vast majority of
+// cards bill on one of these.
+const SUGGESTED_DAYS = [2, 10, 15, 20];
+
 // A small gear button on a credit-card cube/cell that opens an inline form
-// for the two things about a card that aren't detected automatically:
-// its nickname, and (when the billing-day heuristic can't find one) a
-// manual billing day. Used on both the dashboard's card cubes and the
-// Forecast page's card cards.
+// for the things about a card that aren't detected automatically: its
+// nickname, its manual billing day (when the heuristic can't find one), and
+// whether it's a debit card that settles immediately instead of on a
+// monthly cycle. Used on both the dashboard's card cubes and the Forecast
+// page's card cards.
 export default function CardSettingsButton({
   cardId,
   nickname,
   billingDay,
+  isImmediateDebit,
+  maxChargeAmount,
   locale,
   onSaved,
 }: {
   cardId: string;
   nickname: string | null;
   billingDay: number | null;
+  isImmediateDebit?: boolean;
+  maxChargeAmount?: number | null;
   locale: Locale;
   onSaved: () => void;
 }) {
@@ -26,14 +36,27 @@ export default function CardSettingsButton({
   const [open, setOpen] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(nickname ?? "");
   const [dayInput, setDayInput] = useState(billingDay ? String(billingDay) : "");
+  const [debitInput, setDebitInput] = useState(isImmediateDebit ?? false);
+  const [maxChargeInput, setMaxChargeInput] = useState(maxChargeAmount ? String(maxChargeAmount) : "");
+  const [showOtherDay, setShowOtherDay] = useState(
+    !!billingDay && !SUGGESTED_DAYS.includes(billingDay)
+  );
 
   async function save() {
-    const day = dayInput.trim() ? Number(dayInput) : null;
+    const day = !debitInput && dayInput.trim() ? Number(dayInput) : null;
     if (day !== null && (day < 1 || day > 31)) return;
+    const maxCharge = maxChargeInput.trim() ? Number(maxChargeInput) : null;
+    if (maxCharge !== null && (!Number.isFinite(maxCharge) || maxCharge <= 0)) return;
     await fetch("/api/account-mappings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: cardId, nickname: nicknameInput, billingDayOverride: day }),
+      body: JSON.stringify({
+        id: cardId,
+        nickname: nicknameInput,
+        billingDayOverride: day,
+        isImmediateDebit: debitInput,
+        maxChargeAmount: maxCharge,
+      }),
     });
     setOpen(false);
     onSaved();
@@ -47,6 +70,9 @@ export default function CardSettingsButton({
         onClick={() => {
           setNicknameInput(nickname ?? "");
           setDayInput(billingDay ? String(billingDay) : "");
+          setDebitInput(isImmediateDebit ?? false);
+          setMaxChargeInput(maxChargeAmount ? String(maxChargeAmount) : "");
+          setShowOtherDay(!!billingDay && !SUGGESTED_DAYS.includes(billingDay));
           setOpen((v) => !v);
         }}
       >
@@ -59,7 +85,7 @@ export default function CardSettingsButton({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute end-0 top-7 z-20 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg p-3 flex flex-col gap-2">
+          <div className="absolute end-0 top-7 z-20 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg p-3 flex flex-col gap-2">
             <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
               {t.cardNickname}
               <input
@@ -69,18 +95,85 @@ export default function CardSettingsButton({
                 autoFocus
               />
             </label>
-            <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
-              {t.setBillingDay}
+
+            <label className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <input
-                type="number"
-                min={1}
-                max={31}
-                className="border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded px-1.5 py-1 text-xs"
-                value={dayInput}
-                onChange={(e) => setDayInput(e.target.value)}
-                placeholder={locale === "he" ? "1-31" : "1-31"}
+                type="checkbox"
+                checked={debitInput}
+                onChange={(e) => setDebitInput(e.target.checked)}
               />
+              {t.isImmediateDebitLabel}
             </label>
+
+            {!debitInput && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">{t.setBillingDay}</span>
+                {!billingDay && (
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400">{t.billingDayRequiredHint}</span>
+                )}
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">{t.billingDaySuggested}</span>
+                <div className="flex gap-1 flex-wrap">
+                  {SUGGESTED_DAYS.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`text-xs rounded px-2 py-1 border ${
+                        !showOtherDay && dayInput === String(d)
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 dark:text-slate-200"
+                      }`}
+                      onClick={() => {
+                        setDayInput(String(d));
+                        setShowOtherDay(false);
+                      }}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`text-xs rounded px-2 py-1 border ${
+                      showOtherDay
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 dark:text-slate-200"
+                    }`}
+                    onClick={() => setShowOtherDay(true)}
+                  >
+                    {t.billingDayOther}
+                  </button>
+                </div>
+                {showOtherDay && (
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    className="border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded px-1.5 py-1 text-xs"
+                    value={dayInput}
+                    onChange={(e) => setDayInput(e.target.value)}
+                    placeholder="1-31"
+                  />
+                )}
+              </div>
+            )}
+
+            {!debitInput && (
+              <label className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-col gap-1">
+                {t.maxChargeAmountLabel}
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  className="border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded px-1.5 py-1 text-xs"
+                  value={maxChargeInput}
+                  onChange={(e) => setMaxChargeInput(e.target.value)}
+                  placeholder={t.maxChargeAmountPlaceholder}
+                />
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">
+                  {t.maxChargeAmountHint}
+                </span>
+              </label>
+            )}
+
             <div className="flex gap-1.5 justify-end">
               <button
                 className="text-xs bg-slate-200 dark:bg-slate-700 dark:text-slate-200 rounded px-2 py-1"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
 import CardSettingsButton from "@/components/CardSettingsButton";
@@ -18,6 +18,11 @@ interface CardForecast {
   nextChargeDate: string | null;
   dayOfMonth: number | null;
   dayOfMonthIsManual: boolean;
+  isImmediateDebit?: boolean;
+  billingDayRequired?: boolean;
+  maxChargeAmount?: number | null;
+  chargeAmount?: number;
+  rolloverAmount?: number;
   futureTransactionsCount: number;
 }
 
@@ -31,14 +36,25 @@ export default function ForecastPage() {
   const t = dict[locale];
   const [data, setData] = useState<ForecastResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hideZeroCharge, setHideZeroCharge] = useState(false);
+  // Guards against a slower, stale request (e.g. for a previously-selected
+  // entity) resolving after a newer one and overwriting its result — without
+  // this, switching entities quickly could leave the page showing another
+  // entity's cards depending on network timing.
+  const requestIdRef = useRef(0);
 
   function load() {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     const qs = entity !== AGGREGATE ? `?entity=${entity}` : "";
     return fetch(`/api/dashboard/forecast${qs}`)
       .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false));
+      .then((json) => {
+        if (requestIdRef.current === requestId) setData(json);
+      })
+      .finally(() => {
+        if (requestIdRef.current === requestId) setLoading(false);
+      });
   }
 
   useEffect(() => {
@@ -81,9 +97,21 @@ export default function ForecastPage() {
       </div>
 
       <div>
-        <div className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">{t.perCard}</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-medium text-slate-600 dark:text-slate-300">{t.perCard}</div>
+          <label className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={hideZeroCharge}
+              onChange={(e) => setHideZeroCharge(e.target.checked)}
+            />
+            {t.hideZeroChargeCards}
+          </label>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.cards.map((card) => (
+          {data.cards
+            .filter((card) => !hideZeroCharge || card.pendingAmount !== 0)
+            .map((card) => (
             <div
               key={card.id}
               className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200/70 dark:border-slate-700 shadow-sm p-4 flex flex-col gap-3"
@@ -105,6 +133,8 @@ export default function ForecastPage() {
                     cardId={card.id}
                     nickname={card.nickname}
                     billingDay={card.dayOfMonth}
+                    isImmediateDebit={card.isImmediateDebit}
+                    maxChargeAmount={card.maxChargeAmount}
                     locale={locale}
                     onSaved={load}
                   />
@@ -128,19 +158,36 @@ export default function ForecastPage() {
                     ? t.noPendingCharges
                     : `${card.pendingCount} ${t.pendingTransactionsCount}`}
                 </div>
-              </div>
-
-              <div className="border-t border-slate-100 dark:border-slate-700 pt-2 flex items-center justify-between">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">{t.nextChargeDate}</span>
-                {card.nextChargeDate ? (
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    {dateFmt(card.nextChargeDate)}
-                    {card.dayOfMonthIsManual && <span className="ms-1 opacity-60">({t.setBillingDay})</span>}
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-400 dark:text-slate-500">{t.nextChargeUnknown}</span>
+                {!!card.rolloverAmount && (
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
+                    <span className="text-slate-500 dark:text-slate-400">{t.chargeAmountLabel}</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                      {card.chargeAmount?.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
+                    </span>
+                  </div>
+                )}
+                {!!card.rolloverAmount && (
+                  <div className="flex items-center justify-between text-[11px] px-2">
+                    <span className="text-amber-600 dark:text-amber-400">{t.rolloverAmountLabel}</span>
+                    <span className="font-medium text-amber-600 dark:text-amber-400">
+                      {card.rolloverAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
+                    </span>
+                  </div>
                 )}
               </div>
+
+              {!card.isImmediateDebit && (
+                <div className="border-t border-slate-100 dark:border-slate-700 pt-2 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">{t.nextChargeDate}</span>
+                  {card.nextChargeDate ? (
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {dateFmt(card.nextChargeDate)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400 dark:text-slate-500">{t.nextChargeUnknown}</span>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { dict } from "@/lib/i18n";
+import InfoTooltip from "@/components/InfoTooltip";
 
 export interface TaskNote {
   id: string;
@@ -135,6 +136,7 @@ export default function TaskCard({
             >
               {t.snoozeUntilNextWeek}
             </button>
+            <InfoTooltip text={t.tooltipTaskSnooze} />
           </>
         )}
         <button

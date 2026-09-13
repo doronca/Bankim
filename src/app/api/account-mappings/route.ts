@@ -21,6 +21,8 @@ export async function PATCH(req: NextRequest) {
     nickname?: string;
     mergedIntoId?: string | null;
     billingDayOverride?: number | null;
+    isImmediateDebit?: boolean;
+    maxChargeAmount?: number | null;
   };
 
   if (
@@ -29,6 +31,10 @@ export async function PATCH(req: NextRequest) {
     (body.billingDayOverride < 1 || body.billingDayOverride > 31)
   ) {
     return NextResponse.json({ error: "billingDayOverride must be between 1 and 31" }, { status: 400 });
+  }
+
+  if (body.maxChargeAmount !== undefined && body.maxChargeAmount !== null && body.maxChargeAmount <= 0) {
+    return NextResponse.json({ error: "maxChargeAmount must be greater than 0" }, { status: 400 });
   }
 
   if (body.entityId) {
@@ -51,16 +57,31 @@ export async function PATCH(req: NextRequest) {
     inheritedEntityId = target.entityId;
   }
 
+  const finalEntityId = inheritedEntityId !== undefined ? inheritedEntityId : body.entityId;
+
   const updated = await prisma.accountMapping.update({
     where: { id: body.id },
     data: {
-      ...(body.entityId !== undefined ? { entityId: body.entityId } : {}),
+      ...(finalEntityId !== undefined ? { entityId: finalEntityId } : {}),
       ...(body.nickname !== undefined ? { nickname: body.nickname.trim() || null } : {}),
       ...(body.mergedIntoId !== undefined ? { mergedIntoId: body.mergedIntoId } : {}),
-      ...(inheritedEntityId !== undefined ? { entityId: inheritedEntityId } : {}),
       ...(body.billingDayOverride !== undefined ? { billingDayOverride: body.billingDayOverride } : {}),
+      ...(body.isImmediateDebit !== undefined ? { isImmediateDebit: body.isImmediateDebit } : {}),
+      ...(body.maxChargeAmount !== undefined ? { maxChargeAmount: body.maxChargeAmount } : {}),
     },
     include: { entity: true, mergedInto: true },
   });
+
+  // A merged account is treated as part of its target everywhere, so its
+  // entity assignment should always mirror the target's — not just at the
+  // moment of merging, but any time the target's own entity changes later
+  // (e.g. it was merged while still unassigned, then assigned afterward).
+  if (finalEntityId !== undefined) {
+    await prisma.accountMapping.updateMany({
+      where: { mergedIntoId: body.id },
+      data: { entityId: finalEntityId },
+    });
+  }
+
   return NextResponse.json(updated);
 }

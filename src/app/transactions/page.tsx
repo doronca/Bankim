@@ -6,6 +6,7 @@ import { dict } from "@/lib/i18n";
 import { resolveDateRange } from "@/lib/dateRange";
 import DateRangePicker from "@/components/DateRangePicker";
 import TaskCard, { type TaskRow } from "@/components/TaskCard";
+import InfoTooltip from "@/components/InfoTooltip";
 
 interface Tx {
   id: string;
@@ -362,10 +363,25 @@ export default function TransactionsPage() {
             <tr>
               <th className="text-start px-3 py-2 font-medium">{t.date}</th>
               <th className="text-start px-3 py-2 font-medium">{t.merchant}</th>
-              <th className="text-start px-3 py-2 font-medium">{t.category}</th>
+              <th className="text-start px-3 py-2 font-medium">
+                <span className="flex items-center gap-1">
+                  {t.category}
+                  <InfoTooltip text={t.tooltipAutoRule} />
+                </span>
+              </th>
               <th className="text-start px-3 py-2 font-medium">Account</th>
-              <th className="text-start px-3 py-2 font-medium">{t.note}</th>
-              <th className="text-start px-3 py-2 font-medium">{t.tasks}</th>
+              <th className="text-start px-3 py-2 font-medium">
+                <span className="flex items-center gap-1">
+                  {t.note}
+                  <InfoTooltip text={t.tooltipNote} />
+                </span>
+              </th>
+              <th className="text-start px-3 py-2 font-medium">
+                <span className="flex items-center gap-1">
+                  {t.tasks}
+                  <InfoTooltip text={t.tooltipTask} />
+                </span>
+              </th>
               <th className="text-end px-3 py-2 font-medium">{t.amount}</th>
               {showRunningBalance && <th className="text-end px-3 py-2 font-medium">{t.balance}</th>}
             </tr>

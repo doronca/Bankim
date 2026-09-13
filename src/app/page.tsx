@@ -48,6 +48,10 @@ interface CardForecast {
   nickname: string | null;
   accountNumber: string | null;
   dayOfMonth: number | null;
+  isImmediateDebit?: boolean;
+  maxChargeAmount?: number | null;
+  chargeAmount?: number;
+  rolloverAmount?: number;
   entityId: string | null;
   entityName: string | null;
   currency: string;
@@ -194,6 +198,8 @@ export default function DashboardPage() {
                           cardId={card.id}
                           nickname={card.nickname}
                           billingDay={card.dayOfMonth}
+                          isImmediateDebit={card.isImmediateDebit}
+                          maxChargeAmount={card.maxChargeAmount}
                           locale={locale}
                           onSaved={loadForecastCards}
                         />
@@ -211,6 +217,11 @@ export default function DashboardPage() {
                       >
                         {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
                       </div>
+                      {!!card.rolloverAmount && (
+                        <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                          {t.rolloverAmountLabel}: {card.rolloverAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
+                        </div>
+                      )}
                     </div>
                     <div className="mt-1.5 flex items-center justify-between text-[11px]">
                       <span className="text-slate-400 dark:text-slate-500">

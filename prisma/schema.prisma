@@ -55,6 +55,17 @@ model AccountMapping {
   // no linked bank account synced yet, or too few charges so far to confirm
   // a pattern. Takes priority over the detected day when present.
   billingDayOverride Int?
+  // Debit cards settle immediately (no monthly billing cycle) — set on the
+  // Forecast screen alongside the billing day, and excludes the card from
+  // the billing-day heuristic/requirement.
+  isImmediateDebit Boolean @default(false)
+  // "Revolving credit" / fixed monthly charge cap some Israeli cards offer:
+  // the bank never charges more than this amount on the billing day, and
+  // whatever's left over rolls into the next cycle's charge (as an
+  // interest-bearing balance) instead of being billed now. When set, the
+  // forecast splits a cycle's total into what's actually charged now vs.
+  // what rolls to next time.
+  maxChargeAmount Float?
   currency       String       @default("ILS")
   entityId       String?
   entity         Entity?      @relation(fields: [entityId], references: [id], onDelete: SetNull)
