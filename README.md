@@ -8,7 +8,8 @@ to OpenFinance and IBKR to pull *your* data.
 
 > A Hebrew version of this document follows below: **[גרסה בעברית ⬇](#לוח-בקרה-פיננסי)**
 
-This project is dedicated to my father.
+This project is dedicated to my father, who always said he was "עובר על הבנקים" —
+going through the banks. This dashboard carries that habit on.
 
 ---
 
@@ -150,7 +151,8 @@ Fair.co.il.
 הכול רץ על המחשב שלכם. שום מידע לא יוצא ממנו, מלבד קריאות שאתם עצמכם מפעילים אל
 OpenFinance ו-IBKR כדי למשוך את *הנתונים שלכם*.
 
-הפרויקט מוקדש לזכר אבא שלי.
+הפרויקט מוקדש לזכר אבא שלי, שתמיד אמר שהוא "עובר על הבנקים". הדשבורד הזה ממשיך את
+ההרגל הזה.
 
 ## דרישות מוקדמות
 
