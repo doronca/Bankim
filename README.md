@@ -8,7 +8,7 @@ to OpenFinance and IBKR to pull *your* data.
 
 > A Hebrew version of this document follows below: **[גרסה בעברית ⬇](#לוח-בקרה-פיננסי)**
 
-This project is dedicated to my father — see [docs/memorial/IN_MEMORY.md](docs/memorial/IN_MEMORY.md).
+This project is dedicated to my father.
 
 ---
 
@@ -150,7 +150,7 @@ Fair.co.il.
 הכול רץ על המחשב שלכם. שום מידע לא יוצא ממנו, מלבד קריאות שאתם עצמכם מפעילים אל
 OpenFinance ו-IBKR כדי למשוך את *הנתונים שלכם*.
 
-הפרויקט מוקדש לזכר אבא שלי — ראו [docs/memorial/IN_MEMORY.md](docs/memorial/IN_MEMORY.md).
+הפרויקט מוקדש לזכר אבא שלי.
 
 ## דרישות מוקדמות
 
