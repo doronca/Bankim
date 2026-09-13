@@ -183,7 +183,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto">{!sidebarCollapsed && <PreferencesPanel locale={locale} />}</div>
+        <div className="mt-auto flex flex-col gap-3">
+          {!sidebarCollapsed && (
+            <a
+              href="/docs/user-guide.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <span>📖</span>
+              <span>{t.userGuide}</span>
+            </a>
+          )}
+          {!sidebarCollapsed && <PreferencesPanel locale={locale} />}
+        </div>
       </aside>
 
       <main ref={mainRef} className="flex-1 p-6 overflow-y-auto">

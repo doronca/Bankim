@@ -165,6 +165,8 @@ export const dict = {
     tooltipAutoRule: "כשמשנים קטגוריה של תנועה, המערכת יכולה ללמוד כלל אוטומטי: בפעם הבאה שיופיע אותו בית עסק, הוא יסווג לקטגוריה הזו אוטומטית.",
     setupGuide: "מדריך התקנה",
     setupGuideOpenButton: "פתח מדריך התקנה",
+    userGuide: "מדריך למשתמש",
+    userGuidePdf: "מדריך למשתמש מלא (PDF)",
     setupGuideGeneralTitle: "כללי — קובץ .env",
     setupGuideGeneralBody:
       "כל המפתחות והסודות של המערכת (OpenFinance, IBKR וכו') נשמרים בקובץ בשם .env בתיקיית השורש של הפרויקט (לצד package.json). הקובץ לא קיים אצלכם? העתיקו את .env.example ושנו את שמו ל-.env. פתחו אותו בכל עורך טקסט (VS Code, Notepad וכו'), מלאו את הערכים החסרים, שמרו, ואז הפעילו מחדש את שרת הפיתוח (עצרו עם Ctrl+C והריצו שוב npm run dev) — שינויים ב-.env לא נטענים בלי הפעלה מחדש.",
@@ -358,6 +360,8 @@ export const dict = {
     tooltipAutoRule: "When you recategorize a transaction, the system can learn an automatic rule: next time that merchant shows up, it's categorized the same way automatically.",
     setupGuide: "Setup guide",
     setupGuideOpenButton: "Open setup guide",
+    userGuide: "User guide",
+    userGuidePdf: "Full user guide (PDF)",
     setupGuideGeneralTitle: "General — the .env file",
     setupGuideGeneralBody:
       "All the app's keys and secrets (OpenFinance, IBKR, etc.) live in a file called .env in the project's root folder (next to package.json). Don't have one yet? Copy .env.example and rename it to .env. Open it in any text editor (VS Code, Notepad, etc.), fill in the missing values, save, then restart the dev server (Ctrl+C, then npm run dev again) — .env changes aren't picked up without a restart.",

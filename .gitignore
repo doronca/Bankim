@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/scripts/.guide-tools
+/scripts/.guide-shots
 /.pnp
 .pnp.*
 .yarn/*
@@ -49,3 +51,6 @@ src/generated
 
 # claude code local config
 .claude
+
+# user guide PDF contains real screenshots of your own accounts — local only
+/public/docs/user-guide.pdf

@@ -254,9 +254,20 @@ export default function OnboardingPage() {
 
   // Searching (or the entity filter) can match a merged child without its
   // parent — pull the parent along anyway so the merge relationship stays
-  // visible instead of the child floating with no context.
+  // visible instead of the child floating with no context. But only do this
+  // when the parent itself belongs to the filtered entity (or has none) —
+  // otherwise an unrelated entity's whole account group leaks into view just
+  // because one of its accounts happens to be a merge target.
   const filteredMapped = mapped.filter(passesFilters);
-  const parentIdsToKeep = new Set(filteredMapped.filter((m) => m.mergedIntoId).map((m) => m.mergedIntoId!));
+  const parentIdsToKeep = new Set(
+    filteredMapped
+      .filter((m) => m.mergedIntoId)
+      .map((m) => m.mergedIntoId!)
+      .filter((parentId) => {
+        const parent = mapped.find((p) => p.id === parentId);
+        return !parent || matchesEntityFilter(parent);
+      })
+  );
   const visibleRoots = useFlatList
     ? []
     : mapped.filter((m) => !m.mergedIntoId && (passesFilters(m) || parentIdsToKeep.has(m.id)));
@@ -288,12 +299,22 @@ export default function OnboardingPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.onboarding}</h1>
-        <button
-          className="text-xs text-link dark:text-blue-400 underline"
-          onClick={() => setGuideSection("general")}
-        >
-          {t.setupGuide}
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            className="text-xs text-link dark:text-blue-400 underline"
+            href="/docs/user-guide.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t.userGuidePdf}
+          </a>
+          <button
+            className="text-xs text-link dark:text-blue-400 underline"
+            onClick={() => setGuideSection("general")}
+          >
+            {t.setupGuide}
+          </button>
+        </div>
       </div>
 
       <section className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-3">
@@ -525,6 +546,8 @@ export default function OnboardingPage() {
                 allAccounts={mappings}
                 onMerge={setMerge}
                 onSaved={load}
+                entityFilter={entityFilter}
+                parentIds={parentIds}
               />
             ))}
           </div>
@@ -551,6 +574,8 @@ export default function OnboardingPage() {
                 allAccounts={mappings}
                 onMerge={setMerge}
                 onSaved={load}
+                entityFilter={entityFilter}
+                parentIds={parentIds}
               />
             ))}
           </div>
@@ -590,6 +615,8 @@ export default function OnboardingPage() {
                             allAccounts={mappings}
                             onMerge={setMerge}
                             onSaved={load}
+                            entityFilter={entityFilter}
+                            parentIds={parentIds}
                           />
                         </div>
                         {children.length > 0 && (
@@ -614,6 +641,8 @@ export default function OnboardingPage() {
                               allAccounts={mappings}
                               onMerge={setMerge}
                               onSaved={load}
+                              entityFilter={entityFilter}
+                              parentIds={parentIds}
                             />
                           ))}
                         </div>
@@ -657,6 +686,8 @@ function AccountRow({
   allAccounts,
   onMerge,
   onSaved,
+  entityFilter,
+  parentIds,
 }: {
   m: Mapping;
   locale: "he" | "en";
@@ -670,13 +701,26 @@ function AccountRow({
   allAccounts: Mapping[];
   onMerge: (id: string, mergedIntoId: string | null) => void;
   onSaved: () => void;
+  entityFilter?: string;
+  parentIds: Set<string>;
 }) {
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(m.nickname ?? "");
 
-  // Only offer accounts that aren't themselves merged into something else,
-  // and aren't this one — merge chains aren't supported, keep it flat.
-  const mergeCandidates = allAccounts.filter((a) => a.id !== m.id && !a.mergedIntoId);
+  // An account that already has other accounts merged into it is a merge
+  // target itself — merging it into yet another account would create a
+  // chain, so it can't be merged.
+  const canBeMerged = !parentIds.has(m.id);
+
+  // Only offer accounts that aren't themselves merged into something else
+  // (merge chains aren't supported, keep it flat), aren't this one, and are
+  // relevant to what's currently on screen: the entity being filtered on, or
+  // unassigned accounts (which have no entity to conflict with).
+  const matchesFilterOrUnassigned = (a: Mapping) =>
+    !entityFilter || !a.entityId || a.entityId === entityFilter;
+  const mergeCandidates = allAccounts.filter(
+    (a) => a.id !== m.id && !a.mergedIntoId && matchesFilterOrUnassigned(a)
+  );
 
   return (
     <div className={`bg-white dark:bg-slate-800 border ${borderClass} rounded-lg p-3 flex items-center justify-between gap-3`}>
@@ -733,6 +777,7 @@ function AccountRow({
             <InfoTooltip text={t.tooltipMerge} />
           </div>
         ) : (
+          canBeMerged &&
           mergeCandidates.length > 0 && (
             <div className="flex items-center gap-1 mt-1">
               <select
