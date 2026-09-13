@@ -6,6 +6,7 @@ import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
 import { translateCategoryName } from "@/lib/categoryTranslations";
 import { useEntities } from "@/lib/useEntities";
+import { currencySymbol } from "@/lib/currency";
 import AskBox from "@/components/AskBox";
 import InsightsPanel from "@/components/InsightsPanel";
 import TasksPanel from "@/components/TasksPanel";
@@ -180,11 +181,11 @@ export default function DashboardPage() {
                       card.pendingAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
                     }`}
                   >
-                    {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
+                    {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
                   </div>
                   {!!card.rolloverAmount && (
                     <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
-                      {t.rolloverAmountLabel}: {card.rolloverAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {card.currency}
+                      {t.rolloverAmountLabel}: {card.rolloverAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
                     </div>
                   )}
                 </div>
@@ -557,7 +558,7 @@ function NetWorthCard({
       <div className="text-xs text-slate-700 dark:text-slate-400">{label}</div>
       <div className="text-2xl font-semibold tabular-nums mt-1">
         {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}
-        <span className="text-sm text-slate-600 dark:text-slate-500">{currency}</span>
+        <span className="text-sm text-slate-600 dark:text-slate-500">{currencySymbol(currency)}</span>
       </div>
       <div className="absolute bottom-2 end-2 text-slate-300 dark:text-slate-600">{icon}</div>
     </div>

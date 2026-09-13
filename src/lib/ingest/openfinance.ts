@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { categorizeTransaction } from "@/lib/categorize/engine";
+import { NEAR_DUPLICATE_WINDOW_DAYS } from "@/lib/nearDuplicates";
+
+const DUPLICATE_MATCH_WINDOW_MS = NEAR_DUPLICATE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 // OpenFinance (Financy) Open Banking API client — read-only.
 // Confirmed against https://docs.open-finance.ai (Aug 2026).
@@ -246,24 +249,52 @@ export async function syncTransactions() {
           select: { id: true },
         });
 
-        // The OpenFinance sandbox has been observed handing back a fresh
-        // random sourceRef for what's really the same transaction on a
-        // later sync, which defeats the (accountMappingId, sourceRef)
-        // idempotency key above and would otherwise create a duplicate row.
-        // When this exact (account, date, amount, description) combination
-        // already exists under a different sourceRef, treat this as that
-        // transaction rather than importing a second copy.
+        // OpenFinance has been observed reporting a card charge twice: once
+        // as a pending authorization (isInvoiced: false, dated the actual
+        // purchase date) and again a few days later once it settles, under
+        // a brand-new sourceRef and a slightly later date — which defeats
+        // the (accountMappingId, sourceRef) idempotency key above and would
+        // otherwise import a second, duplicate row (this was confirmed to
+        // be inflating the Forecast screen's pending-charge totals). Match
+        // loosely by date proximity — not an exact date, since the settled
+        // date differs from the authorization date — and only against a
+        // still-pending row, so two genuinely separate same-amount charges
+        // at the same merchant (e.g. a recurring subscription) aren't
+        // wrongly merged into one.
         if (!existing) {
+          const txDate = date ? new Date(date) : new Date();
           const possibleDuplicate = await prisma.transaction.findFirst({
             where: {
               accountMappingId: mapping.id,
-              date: date ? new Date(date) : new Date(),
               amount: amountValue,
               description,
+              isInvoiced: false,
+              date: {
+                gte: new Date(txDate.getTime() - DUPLICATE_MATCH_WINDOW_MS),
+                lte: new Date(txDate.getTime() + DUPLICATE_MATCH_WINDOW_MS),
+              },
             },
             select: { id: true },
           });
-          if (possibleDuplicate) continue;
+          if (possibleDuplicate) {
+            // Update the pending row in place (new sourceRef, settled date
+            // and isInvoiced) rather than leaving it stuck pending forever
+            // while a duplicate settled row gets imported alongside it.
+            await prisma.transaction.update({
+              where: { id: possibleDuplicate.id },
+              data: {
+                sourceRef,
+                amount: amountValue,
+                currency: amountInfo.currency,
+                description,
+                additionalInfo,
+                date: txDate,
+                isInvoiced: tx.isInvoiced ?? null,
+              },
+            });
+            imported++;
+            continue;
+          }
         }
 
         const match = existing

@@ -1,10 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
 import { translateCategoryName } from "@/lib/categoryTranslations";
 import { resolveDateRange } from "@/lib/dateRange";
+import { currencySymbol } from "@/lib/currency";
 import DateRangePicker from "@/components/DateRangePicker";
 import TaskCard, { type TaskRow } from "@/components/TaskCard";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -25,6 +27,7 @@ interface Tx {
     entity: { id: string; name: string } | null;
     mergedInto: { displayName: string; nickname: string | null } | null;
   };
+  matchedCard: { id: string; name: string; manual: boolean } | null;
 }
 
 interface AccountOption {
@@ -41,8 +44,17 @@ type Sign = "" | "income" | "expense";
 type AccountType = "" | "bank_account" | "credit_card" | "investment_portfolio";
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div className="text-slate-700 dark:text-slate-300">…</div>}>
+      <TransactionsPageInner />
+    </Suspense>
+  );
+}
+
+function TransactionsPageInner() {
   const { entity, locale, transactionsDateRange, setTransactionsDateRange } = useAppStore();
   const t = dict[locale];
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,7 +63,7 @@ export default function TransactionsPage() {
   const [rememberDefault, setRememberDefault] = useState(false);
 
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [accountFilter, setAccountFilter] = useState("");
+  const [accountFilter, setAccountFilter] = useState(() => searchParams.get("accountId") ?? "");
   const [accountTypeFilter, setAccountTypeFilter] = useState<AccountType>("");
   const [signFilter, setSignFilter] = useState<Sign>("");
   const [hideFuture, setHideFuture] = useState(false);
@@ -62,6 +74,18 @@ export default function TransactionsPage() {
 
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState("");
+
+  const [linkingTxId, setLinkingTxId] = useState<string | null>(null);
+
+  async function setLinkedCard(txId: string, linkedCardId: string | null) {
+    await fetch(`/api/transactions/${txId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ linkedCardId }),
+    });
+    setLinkingTxId(null);
+    reload();
+  }
 
   const [tasksByTx, setTasksByTx] = useState<Record<string, TaskRow[]>>({});
   const [expandedTasksTxId, setExpandedTasksTxId] = useState<string | null>(null);
@@ -111,9 +135,13 @@ export default function TransactionsPage() {
   );
 
   // Reset filters that no longer make sense once the entity/account list changes.
+  // Guarded on allAccounts being loaded — otherwise this fires on first render
+  // (before the account list has been fetched) and clears an accountId passed
+  // in via the URL before it ever gets a chance to match.
   useEffect(() => {
+    if (allAccounts.length === 0) return;
     if (accountFilter && !accounts.some((a) => a.id === accountFilter)) setAccountFilter("");
-  }, [accounts, accountFilter]);
+  }, [accounts, accountFilter, allAccounts]);
 
   // A running balance only makes sense scoped to one account, so default to
   // the entity's single checking account when there is exactly one — that's
@@ -265,7 +293,17 @@ export default function TransactionsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.transactions}</h1>
-        <DateRangePicker value={transactionsDateRange} onChange={setTransactionsDateRange} locale={locale} />
+        <div className="flex items-center gap-2">
+          <DateRangePicker value={transactionsDateRange} onChange={setTransactionsDateRange} locale={locale} />
+          <button
+            className="text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1.5 flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            onClick={() => reload()}
+            disabled={loading}
+            title={t.refresh}
+          >
+            <span aria-hidden>⟳</span> {t.refresh}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -350,7 +388,7 @@ export default function TransactionsPage() {
           <div className="text-xs text-slate-700 dark:text-slate-400" title={t.runningBalanceHint}>
             {t.runningBalance}:{" "}
             <span className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
-              {(runningBalances?.get(transactions[0]?.id) ?? 0).toLocaleString()} {currency}
+              {(runningBalances?.get(transactions[0]?.id) ?? 0).toLocaleString()} {currencySymbol(currency)}
             </span>
           </div>
         ) : (
@@ -414,8 +452,73 @@ export default function TransactionsPage() {
                   </div>
                 </td>
                 <td className="px-3 py-2 max-w-xs">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="truncate">{tx.description}</span>
+                    {tx.matchedCard && linkingTxId !== tx.id && (
+                      <button
+                        className="shrink-0 text-[10px] rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                        title={
+                          tx.matchedCard.manual
+                            ? locale === "he"
+                              ? "שויך ידנית — לחץ להצגת תנועות הכרטיס, או שנה שיוך"
+                              : "Linked manually — click to show this card's transactions, or change the link"
+                            : locale === "he"
+                            ? "חיוב של הכרטיס הזה — הצג את תנועותיו, או תקן אם זה לא נכון"
+                            : "This card's charge — show its transactions, or fix if wrong"
+                        }
+                        onClick={() => setAccountFilter(tx.matchedCard!.id)}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setLinkingTxId(tx.id);
+                        }}
+                      >
+                        💳 {tx.matchedCard.name}
+                        {!tx.matchedCard.manual && <span className="opacity-60 ms-0.5">(~)</span>}
+                      </button>
+                    )}
+                    {tx.accountMapping.entity &&
+                      !tx.matchedCard &&
+                      linkingTxId !== tx.id &&
+                      allAccounts.some(
+                        (a) => a.accountType === "credit_card" && !a.mergedIntoId && a.entityId === tx.accountMapping.entity!.id
+                      ) && (
+                        <button
+                          className="shrink-0 text-[10px] rounded-full text-slate-600 dark:text-slate-400 border border-dashed border-slate-300 dark:border-slate-600 px-1.5 py-0.5 hover:bg-slate-50 dark:hover:bg-slate-700"
+                          onClick={() => setLinkingTxId(tx.id)}
+                        >
+                          + {locale === "he" ? "שייך לכרטיס" : "Link to card"}
+                        </button>
+                      )}
+                    {linkingTxId === tx.id && (
+                      <span className="flex items-center gap-1">
+                        <select
+                          className="text-[11px] border border-slate-300 dark:border-slate-600 dark:bg-slate-900 rounded px-1 py-0.5"
+                          autoFocus
+                          defaultValue={tx.matchedCard?.manual ? tx.matchedCard.id : ""}
+                          onChange={(e) => setLinkedCard(tx.id, e.target.value || null)}
+                        >
+                          <option value="">{locale === "he" ? "בחר כרטיס…" : "Choose card…"}</option>
+                          {allAccounts
+                            .filter(
+                              (a) =>
+                                a.accountType === "credit_card" &&
+                                !a.mergedIntoId &&
+                                a.entityId === (tx.accountMapping.entity?.id ?? null)
+                            )
+                            .map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.nickname ?? a.displayName}
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          className="text-[11px] text-slate-600 dark:text-slate-400"
+                          onClick={() => setLinkingTxId(null)}
+                        >
+                          {t.cancel}
+                        </button>
+                      </span>
+                    )}
                     {tx.additionalInfo && (
                       <button
                         className="shrink-0 text-slate-600 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs leading-none"
@@ -593,7 +696,7 @@ export default function TransactionsPage() {
                     tx.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                   }`}
                 >
-                  {tx.amount.toLocaleString()} {tx.currency}
+                  {tx.amount.toLocaleString()} {currencySymbol(tx.currency)}
                 </td>
                 {showRunningBalance && (
                   <td className="px-3 py-2 text-end tabular-nums whitespace-nowrap text-slate-600 dark:text-slate-300">

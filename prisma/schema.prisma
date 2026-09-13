@@ -79,6 +79,9 @@ model AccountMapping {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   transactions   Transaction[]
+  // Bank-account debits linked here as "this card's monthly charge" (see
+  // Transaction.linkedCard below).
+  linkedFromTransactions Transaction[] @relation("TransactionLinkedCard")
   ibkrPositions  IbkrPosition[]
   ibkrTrades     IbkrTrade[]
   ibkrCashLines  IbkrCashLine[]
@@ -113,6 +116,13 @@ model Transaction {
   sourceRef        String? // source's own transaction id, for idempotent re-sync
   autoRuleId       String?
   autoRule         AutoRule?      @relation(fields: [autoRuleId], references: [id])
+  // For a bank-account transaction that's really a credit card's lump-sum
+  // monthly charge (e.g. "לאומי מאסטרקארד"): which of the user's cards it
+  // belongs to. The bank's own description often can't tell two cards from
+  // the same issuer apart (no last-4 digits, generic text), so this is set
+  // manually by the user rather than inferred automatically once set.
+  linkedCardId     String?
+  linkedCard       AccountMapping? @relation("TransactionLinkedCard", fields: [linkedCardId], references: [id], onDelete: SetNull)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
