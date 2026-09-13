@@ -86,32 +86,68 @@ export async function GET(req: NextRequest) {
     previousAmount: c.previousAmount,
   }));
 
-  const result = transactions.map((tx) => {
-    const suggestedCategory =
-      !tx.category && categorySuggestions ? lookupCategorySuggestion(categorySuggestions, tx) : null;
+  // Loose word-overlap check for "this bank line reads like a card's
+  // issuer/network billing description" (e.g. "לאומי מאסטרקרד" vs. a card
+  // named "לאומי מאסטרקארד") — deliberately looser than matchCardForDescription,
+  // which requires the exact displayName as a substring and so misses simple
+  // spelling variants the bank's own export uses for the same card.
+  const cardNameTokensByEntity = new Map<string | null, Set<string>>();
+  for (const card of forecastCards) {
+    const tokens = `${card.displayName} ${card.name}`.split(/\s+/).filter((w) => w.length >= 2);
+    const set = cardNameTokensByEntity.get(card.entityId) ?? new Set<string>();
+    for (const w of tokens) set.add(w);
+    cardNameTokensByEntity.set(card.entityId, set);
+  }
+  function looksLikeCardBillLine(description: string | null, entityId: string | null): boolean {
+    const tokens = (description ?? "").split(/\s+/).filter((w) => w.length >= 2);
+    const known = cardNameTokensByEntity.get(entityId);
+    return !!known && tokens.some((w) => known.has(w));
+  }
 
-    if (tx.linkedCard) {
-      return {
-        ...tx,
-        suggestedCategory,
-        matchedCard: { id: tx.linkedCard.id, name: tx.linkedCard.nickname ?? tx.linkedCard.displayName, manual: true },
-      };
-    }
-    if (tx.accountMapping.accountType !== "bank_account" || !needsCardMatch) {
-      return { ...tx, suggestedCategory, matchedCard: null };
-    }
-    const entityId = tx.accountMapping.entityId;
-    // The issuer name/last-4-digit heuristic is precise when the bank
-    // actually includes that detail in the description — try it first, and
-    // only fall back to matching by cycle amount (which several cards could
-    // plausibly hit, hence the tolerance-based best match) when it doesn't.
-    const textMatch = matchCardForDescription(
-      tx.description,
-      textCandidates.filter((c) => amountCandidates.find((a) => a.id === c.id)?.entityId === entityId)
-    );
-    const match = textMatch ?? matchCardForAmount({ entityId, date: tx.date, amount: tx.amount }, amountCandidates);
-    return { ...tx, suggestedCategory, matchedCard: match ? { id: match.id, name: match.name, manual: false } : null };
-  });
+  const now = new Date();
+  const result = transactions
+    .map((tx) => {
+      const suggestedCategory =
+        !tx.category && categorySuggestions ? lookupCategorySuggestion(categorySuggestions, tx) : null;
+
+      if (tx.linkedCard) {
+        return {
+          ...tx,
+          suggestedCategory,
+          matchedCard: { id: tx.linkedCard.id, name: tx.linkedCard.nickname ?? tx.linkedCard.displayName, manual: true },
+        };
+      }
+      if (tx.accountMapping.accountType !== "bank_account" || !needsCardMatch) {
+        return { ...tx, suggestedCategory, matchedCard: null };
+      }
+      const entityId = tx.accountMapping.entityId;
+      // The issuer name/last-4-digit heuristic is precise when the bank
+      // actually includes that detail in the description — try it first, and
+      // only fall back to matching by cycle amount (which several cards could
+      // plausibly hit, hence the tolerance-based best match) when it doesn't.
+      const textMatch = matchCardForDescription(
+        tx.description,
+        textCandidates.filter((c) => amountCandidates.find((a) => a.id === c.id)?.entityId === entityId)
+      );
+      const match = textMatch ?? matchCardForAmount({ entityId, date: tx.date, amount: tx.amount }, amountCandidates);
+      return { ...tx, suggestedCategory, matchedCard: match ? { id: match.id, name: match.name, manual: false } : null };
+    })
+    // A bank-account row that's really a credit card's lump-sum monthly
+    // charge (e.g. "לאומי מאסטרקארד") is only a real, settled amount once
+    // it's dated in the past — a bank can't finalize and post a card's
+    // statement total before the cycle closes, so a future-dated instance
+    // of one is a placeholder/duplicate, not a real upcoming debit. It also
+    // duplicates the card's own pending-charge forecast (computeCardForecasts
+    // / the Forecast screen), which is the trustworthy source for what a
+    // card will actually charge next — so it's dropped here rather than
+    // shown as an invented future transaction. Caught two ways: a confident
+    // card match, or (since the bank's own export has been observed using a
+    // slightly different spelling than the card's own name, e.g. "מאסטרקרד"
+    // vs. "מאסטרקארד") a looser word-overlap with a known card's name.
+    .filter((tx) => {
+      if (tx.accountMapping.accountType !== "bank_account" || tx.date.getTime() <= now.getTime()) return true;
+      return !tx.matchedCard && !looksLikeCardBillLine(tx.description, tx.accountMapping.entityId);
+    });
 
   return NextResponse.json(result);
 }

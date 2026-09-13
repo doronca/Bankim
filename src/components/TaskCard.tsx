@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import { dict } from "@/lib/i18n";
 import InfoTooltip from "@/components/InfoTooltip";
+import Ltr from "@/components/Ltr";
 
 export interface TaskNote {
   id: string;
@@ -83,13 +84,13 @@ export default function TaskCard({
           </div>
           {showTransaction && task.transaction && (
             <div className="text-[11px] text-slate-600 dark:text-slate-500 truncate">
-              {task.transaction.description} · {dateFmt(task.transaction.date)}
+              {task.transaction.description} · <Ltr>{dateFmt(task.transaction.date)}</Ltr>
             </div>
           )}
           <div className="text-[11px] mt-0.5 flex items-center gap-1.5">
             {task.dueDate ? (
               <span className={isOverdue ? "text-red-600 dark:text-red-400 font-medium" : "text-slate-700 dark:text-slate-400"}>
-                {dateFmt(task.dueDate)} {isOverdue && `(${t.overdueTask})`}
+                <Ltr>{dateFmt(task.dueDate)}</Ltr> {isOverdue && `(${t.overdueTask})`}
               </span>
             ) : (
               <span className="text-slate-600 dark:text-slate-500">{t.noDueDate}</span>

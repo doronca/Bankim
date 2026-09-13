@@ -12,6 +12,8 @@ import InsightsPanel from "@/components/InsightsPanel";
 import TasksPanel from "@/components/TasksPanel";
 import CardSettingsButton from "@/components/CardSettingsButton";
 import DashboardCustomizer, { DashboardSectionHeader } from "@/components/DashboardCustomizer";
+import Ltr from "@/components/Ltr";
+import { formatSignedAmount } from "@/lib/format";
 
 interface Summary {
   monthly: Record<string, { income: number; expense: number }>;
@@ -175,15 +177,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-2">
                   <div className="text-[11px] text-slate-700 dark:text-slate-400">
-                    {t.pendingAmount}
+                    {t.chargeAmountLabel}
                     {card.isEstimate && <span className="ms-1 opacity-70">(~)</span>}
                   </div>
                   <div
                     className={`text-lg font-bold tabular-nums ${
-                      card.pendingAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
+                      (card.chargeAmount ?? card.pendingAmount) > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
                     }`}
                   >
-                    {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
+                    {(card.chargeAmount ?? card.pendingAmount).toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
                   </div>
                   {!!card.rolloverAmount && (
                     <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
@@ -197,7 +199,7 @@ export default function DashboardPage() {
                       `${locale === "he" ? "חיוב קודם" : "Previous"}: ${card.previousAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                   </span>
                   <span className="font-medium text-slate-600 dark:text-slate-300">
-                    {card.nextChargeDate ? dateFmt(card.nextChargeDate) : "—"}
+                    {card.nextChargeDate ? <Ltr>{dateFmt(card.nextChargeDate)}</Ltr> : "—"}
                   </span>
                 </div>
                 {!card.isImmediateDebit && card.dayOfMonth != null && (
@@ -384,10 +386,14 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2">
               {insights.topMerchants.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
               {insights.topMerchants.map((m) => (
-                <div key={m.merchant} className="flex items-center justify-between text-sm">
-                  <div className="truncate max-w-[60%]">{m.merchant}</div>
-                  <div className="text-slate-600 dark:text-slate-500 text-xs">{m.count}×</div>
-                  <div className="tabular-nums">{m.amount.toLocaleString()}</div>
+                <div key={m.merchant} className="flex items-center gap-3 text-sm">
+                  <div className="flex-1 truncate">{m.merchant}</div>
+                  <div className="w-8 text-end text-slate-600 dark:text-slate-500 text-xs">
+                    <Ltr>×{m.count}</Ltr>
+                  </div>
+                  <div className="w-24 text-end tabular-nums">
+                    <Ltr>{formatSignedAmount(-m.amount)}</Ltr>
+                  </div>
                 </div>
               ))}
             </div>
@@ -403,10 +409,12 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-2">
             {insights.biggestTransactions.length === 0 && <div className="text-slate-600 dark:text-slate-500 text-sm">—</div>}
             {insights.biggestTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between text-sm">
-                <div className="truncate max-w-[50%]">{tx.description}</div>
-                <div className="text-slate-600 dark:text-slate-500 text-xs">{tx.category ? translateCategoryName(tx.category, locale) : t.uncategorized}</div>
-                <div className="tabular-nums text-rose-600">{tx.amount.toLocaleString()}</div>
+              <div key={tx.id} className="flex items-center gap-3 text-sm">
+                <div className="flex-1 truncate">{tx.description}</div>
+                <div className="w-28 text-end truncate text-slate-600 dark:text-slate-500 text-xs">{tx.category ? translateCategoryName(tx.category, locale) : t.uncategorized}</div>
+                <div className="w-24 text-end tabular-nums text-rose-600">
+                  <Ltr>{formatSignedAmount(-tx.amount)}</Ltr>
+                </div>
               </div>
             ))}
           </div>
@@ -497,10 +505,12 @@ export default function DashboardPage() {
                 <div className={`text-[11px] mt-1 flex items-center gap-2 flex-wrap ${isActive ? "text-slate-300 dark:text-slate-600" : "text-slate-700 dark:text-slate-400"}`}>
                   {dates.length > 0 && (
                     <span>
-                      {dates
-                        .sort()
-                        .map((d) => new Date(d).toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { day: "numeric", month: "short" }))
-                        .join(" · ")}
+                      <Ltr>
+                        {dates
+                          .sort()
+                          .map((d) => new Date(d).toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { day: "numeric", month: "short" }))
+                          .join(" · ")}
+                      </Ltr>
                     </span>
                   )}
                   {futureCount > 0 && (

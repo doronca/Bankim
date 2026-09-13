@@ -6,6 +6,7 @@ import { useAppStore, AGGREGATE } from "@/lib/store";
 import { dict } from "@/lib/i18n";
 import { currencySymbol } from "@/lib/currency";
 import CardSettingsButton from "@/components/CardSettingsButton";
+import Ltr from "@/components/Ltr";
 
 interface CardForecast {
   id: string;
@@ -25,7 +26,7 @@ interface CardForecast {
   isImmediateDebit?: boolean;
   billingDayRequired?: boolean;
   maxChargeAmount?: number | null;
-  chargeAmount?: number;
+  chargeAmount: number;
   rolloverAmount?: number;
   futureTransactionsCount: number;
 }
@@ -223,12 +224,12 @@ export default function ForecastPage() {
 
               <div>
                 <div className="text-[11px] text-slate-700 dark:text-slate-400">
-                  {t.pendingAmount}
+                  {t.chargeAmountLabel}
                   {card.isEstimate && <span className="ms-1 opacity-70">(~)</span>}
                 </div>
                 <button
                   className={`text-xl font-bold tabular-nums text-start hover:underline ${
-                    card.pendingAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
+                    card.chargeAmount > 0 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-500"
                   }`}
                   onClick={() => {
                     // Scope the linked-to view to the same cycle window the
@@ -246,18 +247,18 @@ export default function ForecastPage() {
                   }}
                   title={t.transactions}
                 >
-                  {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
+                  {card.chargeAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
                 </button>
                 <div className="text-[11px] text-slate-600 dark:text-slate-500">
-                  {card.pendingAmount === 0 && !card.isEstimate
+                  {card.chargeAmount === 0 && !card.isEstimate
                     ? t.noPendingCharges
                     : `${card.pendingCount} ${t.pendingTransactionsCount}`}
                 </div>
                 {!!card.rolloverAmount && (
                   <div className="mt-1.5 flex items-center justify-between text-[11px] bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
-                    <span className="text-slate-700 dark:text-slate-400">{t.chargeAmountLabel}</span>
+                    <span className="text-slate-700 dark:text-slate-400">{t.pendingAmount}</span>
                     <span className="font-medium text-slate-700 dark:text-slate-200">
-                      {card.chargeAmount?.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
+                      {card.pendingAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} {currencySymbol(card.currency)}
                     </span>
                   </div>
                 )}
@@ -279,7 +280,7 @@ export default function ForecastPage() {
                     </span>
                     {card.nextChargeDate ? (
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                        {dateFmt(card.nextChargeDate)}
+                        <Ltr>{dateFmt(card.nextChargeDate)}</Ltr>
                       </span>
                     ) : (
                       <span className="text-xs text-slate-600 dark:text-slate-500">{t.nextChargeUnknown}</span>

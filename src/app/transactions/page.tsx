@@ -10,6 +10,8 @@ import { currencySymbol } from "@/lib/currency";
 import DateRangePicker from "@/components/DateRangePicker";
 import TaskCard, { type TaskRow } from "@/components/TaskCard";
 import InfoTooltip from "@/components/InfoTooltip";
+import Ltr from "@/components/Ltr";
+import { formatSignedAmount } from "@/lib/format";
 
 interface Tx {
   id: string;
@@ -465,7 +467,7 @@ function TransactionsPageInner() {
               <tr className="border-t border-slate-100 dark:border-slate-700 align-top">
                 <td className="px-3 py-2 whitespace-nowrap">
                   <div className="flex items-center gap-1.5">
-                    {new Date(tx.date).toLocaleDateString(locale === "he" ? "he-IL" : "en-US")}
+                    <Ltr>{new Date(tx.date).toLocaleDateString(locale === "he" ? "he-IL" : "en-US")}</Ltr>
                     {isFuture && (
                       <span className="text-[10px] rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5">
                         {t.futureTag}
@@ -695,8 +697,14 @@ function TransactionsPageInner() {
                           onClick={() => setExpandedTasksTxId(expandedTasksTxId === tx.id ? null : tx.id)}
                         >
                           {rowTasks.length > 0
-                            ? `${openTasks.length}/${rowTasks.length} ${t.tasks}${soonestDue ? " · " + new Date(soonestDue).toLocaleDateString(locale === "he" ? "he-IL" : "en-US") : ""}`
+                            ? `${openTasks.length}/${rowTasks.length} ${t.tasks}`
                             : `+ ${t.addTask}`}
+                          {rowTasks.length > 0 && soonestDue && (
+                            <>
+                              {" · "}
+                              <Ltr>{new Date(soonestDue).toLocaleDateString(locale === "he" ? "he-IL" : "en-US")}</Ltr>
+                            </>
+                          )}
                         </button>
                         {expandedTasksTxId === tx.id && (
                           <div className="flex flex-col gap-2 w-64">
@@ -734,11 +742,11 @@ function TransactionsPageInner() {
                     tx.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
                   }`}
                 >
-                  {tx.amount.toLocaleString()} {currencySymbol(tx.currency)}
+                  <Ltr>{formatSignedAmount(tx.amount)}</Ltr> {currencySymbol(tx.currency)}
                 </td>
                 {showRunningBalance && (
                   <td className="px-3 py-2 text-end tabular-nums whitespace-nowrap text-slate-600 dark:text-slate-300">
-                    {(runningBalances?.get(tx.id) ?? 0).toLocaleString()}
+                    <Ltr>{(runningBalances?.get(tx.id) ?? 0).toLocaleString()}</Ltr>
                   </td>
                 )}
               </tr>
