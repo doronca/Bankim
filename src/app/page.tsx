@@ -88,14 +88,16 @@ export default function DashboardPage() {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [hideZeroCards, setHideZeroCards] = useState(false);
 
-  useEffect(() => {
+  function loadSummary() {
     setLoading(true);
     const qs = entity !== AGGREGATE ? `?entity=${entity}` : "";
     fetch(`/api/dashboard/summary${qs}`)
       .then((r) => r.json())
       .then(setSummary)
       .finally(() => setLoading(false));
-  }, [entity]);
+  }
+
+  useEffect(loadSummary, [entity]);
 
   // Fetched unscoped once — grouped by entity client-side to drive the
   // per-entity picker cards below, so switching entities doesn't refetch.
@@ -437,6 +439,16 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{title}</h1>
         <div className="flex items-center gap-3 shrink-0">
+          <button
+            className="text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1 flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700"
+            onClick={() => {
+              loadSummary();
+              loadForecastCards();
+            }}
+            title={t.refresh}
+          >
+            <span aria-hidden>⟳</span> {t.refresh}
+          </button>
           {entities.length > 1 && entity !== AGGREGATE && (
             <button
               className="text-xs text-link dark:text-blue-400 underline shrink-0"

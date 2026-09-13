@@ -19,6 +19,7 @@ interface Tx {
   description: string;
   additionalInfo: string | null;
   category: string | null;
+  suggestedCategory: string | null;
   note: string | null;
   accountMapping: {
     id: string;
@@ -258,6 +259,15 @@ function TransactionsPageInner() {
       });
     }
     setEditingId(null);
+    reload();
+  }
+
+  async function acceptSuggestion(id: string, category: string) {
+    await fetch(`/api/transactions/${id}/recategorize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, scope: "entity" }),
+    });
     reload();
   }
 
@@ -587,6 +597,22 @@ function TransactionsPageInner() {
                           {t.cancel}
                         </button>
                       </div>
+                    </div>
+                  ) : !tx.category && tx.suggestedCategory ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        className="text-xs rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-700 px-2 py-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                        onClick={() => startEdit(tx)}
+                        title={t.uncategorized}
+                      >
+                        {t.suggestedCategoryPrefix} {translateCategoryName(tx.suggestedCategory, locale)}
+                      </button>
+                      <button
+                        className="text-xs rounded-full bg-primary text-white px-2 py-0.5 hover:opacity-90"
+                        onClick={() => acceptSuggestion(tx.id, tx.suggestedCategory!)}
+                      >
+                        {t.acceptSuggestion}
+                      </button>
                     </div>
                   ) : (
                     <button

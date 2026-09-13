@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma, AccountType } from "@/generated/prisma";
 import { matchCardForDescription, matchCardForAmount } from "@/lib/cardMatch";
 import { computeCardForecasts } from "@/lib/cardForecast";
+import { getCategorySuggestionMap, lookupCategorySuggestion } from "@/lib/categorize/engine";
 
 // GET /api/transactions?entity=<entityId>&category=Groceries&accountId=<id>
 //   &accountType=credit_card&sign=expense&search=text&hideFuture=1&from=2026-01-01&to=2026-02-01
@@ -64,6 +65,9 @@ export async function GET(req: NextRequest) {
   // description frequently doesn't carry enough detail (no last-4 digits, a
   // generic issuer label shared by several of the user's cards) for the
   // heuristics below to tell cards apart on their own.
+  const hasUncategorized = transactions.some((tx) => !tx.category);
+  const categorySuggestions = hasUncategorized ? await getCategorySuggestionMap() : null;
+
   const needsCardMatch = transactions.some((tx) => tx.accountMapping.accountType === "bank_account");
   const forecastCards = needsCardMatch ? await computeCardForecasts(null) : [];
   const textCandidates = forecastCards.map((c) => ({
@@ -83,11 +87,18 @@ export async function GET(req: NextRequest) {
   }));
 
   const result = transactions.map((tx) => {
+    const suggestedCategory =
+      !tx.category && categorySuggestions ? lookupCategorySuggestion(categorySuggestions, tx) : null;
+
     if (tx.linkedCard) {
-      return { ...tx, matchedCard: { id: tx.linkedCard.id, name: tx.linkedCard.nickname ?? tx.linkedCard.displayName, manual: true } };
+      return {
+        ...tx,
+        suggestedCategory,
+        matchedCard: { id: tx.linkedCard.id, name: tx.linkedCard.nickname ?? tx.linkedCard.displayName, manual: true },
+      };
     }
     if (tx.accountMapping.accountType !== "bank_account" || !needsCardMatch) {
-      return { ...tx, matchedCard: null };
+      return { ...tx, suggestedCategory, matchedCard: null };
     }
     const entityId = tx.accountMapping.entityId;
     // The issuer name/last-4-digit heuristic is precise when the bank
@@ -99,7 +110,7 @@ export async function GET(req: NextRequest) {
       textCandidates.filter((c) => amountCandidates.find((a) => a.id === c.id)?.entityId === entityId)
     );
     const match = textMatch ?? matchCardForAmount({ entityId, date: tx.date, amount: tx.amount }, amountCandidates);
-    return { ...tx, matchedCard: match ? { id: match.id, name: match.name, manual: false } : null };
+    return { ...tx, suggestedCategory, matchedCard: match ? { id: match.id, name: match.name, manual: false } : null };
   });
 
   return NextResponse.json(result);

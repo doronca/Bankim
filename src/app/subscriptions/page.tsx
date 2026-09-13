@@ -87,7 +87,16 @@ export default function SubscriptionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.subscriptions}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">{t.subscriptions}</h1>
+          <button
+            className="text-xs text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1 flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 shrink-0"
+            onClick={() => load()}
+            title={t.refresh}
+          >
+            <span aria-hidden>⟳</span> {t.refresh}
+          </button>
+        </div>
         <p className="text-xs text-slate-700 dark:text-slate-400 mt-1">
           {locale === "he"
             ? "רק בתי עסק עם קצב חיוב סדיר (שבועי/חודשי/וכו') נספרים כמנוי. הוצאות חד-פעמיות או בלתי סדירות מופיעות בנפרד למטה. ניתן לתקן סיווג שגוי ידנית."

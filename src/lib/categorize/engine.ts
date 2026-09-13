@@ -114,6 +114,49 @@ export async function categorizeUncategorized() {
   return updated;
 }
 
+// Builds merchant -> most-common-category lookup from transactions the user
+// has already categorized (manually or via a rule), for transactions that no
+// AutoRule matches. Keyed by normalized merchantNormalized (falling back to
+// description), so a transaction that shares a merchant with past ones gets
+// a suggestion even without an explicit rule ever having been created for it.
+export async function getCategorySuggestionMap(): Promise<Map<string, string>> {
+  const categorized = await prisma.transaction.findMany({
+    where: { category: { not: null } },
+    select: { description: true, merchantNormalized: true, category: true },
+  });
+
+  const counts = new Map<string, Map<string, number>>();
+  for (const tx of categorized) {
+    const key = normalizeMerchant(tx.merchantNormalized ?? tx.description);
+    if (!key || !tx.category) continue;
+    const perCategory = counts.get(key) ?? new Map<string, number>();
+    perCategory.set(tx.category, (perCategory.get(tx.category) ?? 0) + 1);
+    counts.set(key, perCategory);
+  }
+
+  const suggestions = new Map<string, string>();
+  for (const [key, perCategory] of counts) {
+    let bestCategory: string | null = null;
+    let bestCount = 0;
+    for (const [category, count] of perCategory) {
+      if (count > bestCount) {
+        bestCategory = category;
+        bestCount = count;
+      }
+    }
+    if (bestCategory) suggestions.set(key, bestCategory);
+  }
+  return suggestions;
+}
+
+export function lookupCategorySuggestion(
+  suggestions: Map<string, string>,
+  tx: { description: string; merchantNormalized: string | null }
+): string | null {
+  const key = normalizeMerchant(tx.merchantNormalized ?? tx.description);
+  return suggestions.get(key) ?? null;
+}
+
 export async function seedDefaultRules(seed: { pattern: string; category: string }[]) {
   for (const s of seed) {
     const exists = await prisma.autoRule.findFirst({
